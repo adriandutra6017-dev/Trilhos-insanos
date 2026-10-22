@@ -1,0 +1,8 @@
+{
+  "name": "trilhos-insanos-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor simples do Trilhos Insanos com rankings semanais",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

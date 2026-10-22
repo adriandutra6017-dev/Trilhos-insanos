@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#071426">
+<title>Trilhos Insanos — V36 Servidor e cooperativo</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071426;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;touch-action:none}
+#view{display:block;width:100vw;height:100dvh;touch-action:none}
+#hud{position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;padding:13px 14px;display:flex;justify-content:space-between;pointer-events:none;gap:10px;text-shadow:0 2px 4px #000}
+.pill{background:#071426c9;border:1px solid #ffffff38;border-radius:14px;padding:8px 12px;font-size:clamp(14px,4vw,19px);font-weight:850}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(#07142655,#071426d9);text-align:center}
+.card{width:min(440px,100%);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;padding:25px 20px;border:1px solid #ffffff3d;border-radius:24px;background:#0c1b30ed;box-shadow:0 18px 60px #0008}
+h1{font-size:clamp(30px,8vw,44px);line-height:1.02;margin:0 0 12px;letter-spacing:.5px}
+p{line-height:1.45;color:#dce8f7;margin:10px 0 18px}
+button{touch-action:manipulation;cursor:pointer;border:0;border-radius:16px;padding:14px 24px;font-weight:900;font-size:18px;background:#facc15;color:#172033}
+.small{font-size:12px;color:#b9c8dc;margin-top:14px;line-height:1.4}
+.hidden{display:none!important}
+#menuButtons{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+#menuButtons button{font-size:14px;padding:11px 13px;background:#38bdf8;color:#082032}
+#pagePanel{margin-top:12px;text-align:left;background:#071426a8;border-radius:14px;padding:12px;max-height:42vh;overflow:auto;overscroll-behavior:contain}
+#pagePanel button{font-size:13px;padding:9px 11px;margin:4px;background:#facc15}
+#pagePanel .item{padding:8px 0;border-bottom:1px solid #ffffff24}
+#phaseBadge{position:fixed;z-index:5;top:calc(68px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);padding:6px 11px;border-radius:12px;background:#071426dc;border:1px solid #facc1580;color:#fef08a;font-size:12px;font-weight:950;text-shadow:0 2px 4px #000;white-space:nowrap;pointer-events:none}
+#timerWidget{position:fixed;top:calc(72px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:5px 11px;border-radius:12px;background:#071426d9;border:1px solid #ffffff55;font-weight:950;text-shadow:0 2px 4px #000;pointer-events:none;white-space:nowrap}
+#timerWidget img{width:28px;height:28px;object-fit:contain;border-radius:5px}
+#guardBanner{position:fixed;z-index:20;top:30%;left:5%;right:5%;padding:18px 12px;border-radius:18px;background:#991b1bEE;border:2px solid #fecaca;color:#fff;text-align:center;font-size:clamp(20px,6vw,32px);font-weight:1000;text-shadow:0 2px 4px #000;pointer-events:none;display:none;box-shadow:0 12px 45px #0009}
+#pagePanel input[type=range]{width:100%;accent-color:#facc15}#pagePanel input[type=text]{width:100%;padding:8px;border-radius:8px;border:1px solid #ffffff55;background:#10233c;color:#fff}#pagePanel label{display:block;padding:7px 0}
+#gojoAbility{position:fixed;z-index:12;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0));min-height:48px;transform:translateX(-50%);border:2px solid #d8b4fe;background:linear-gradient(135deg,#6d28d9,#c026d3);color:#fff;padding:12px 16px;border-radius:16px;font-size:14px;box-shadow:0 0 22px #a855f799;white-space:nowrap}#p2Controls{position:fixed;z-index:11;bottom:calc(14px + env(safe-area-inset-bottom,0));display:none;gap:5px;flex-wrap:wrap;width:min(44vw,250px);padding:8px;border-radius:16px;background:#071426b8;border:1px solid #ffffff44}#p2Controls button{font-size:18px;padding:10px 12px;min-width:44px;min-height:44px;background:#38bdf8;color:#082032}#p2Controls.left{left:8px}#p2Controls.right{right:8px}body.landscapeHint #overlay .card{max-height:90dvh}#hint{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0));left:0;right:0;text-align:center;font-size:12px;color:#e5edf8aa;pointer-events:none;text-shadow:0 1px 3px #000}
+
+/* V23 — menu original inspirado na energia visual dos endless runners */
+#overlay{z-index:10;overflow:hidden;isolation:isolate;align-items:center;padding:clamp(10px,3vh,26px) 16px;background:linear-gradient(180deg,rgba(2,16,43,.18) 0%,rgba(3,18,45,.28) 43%,rgba(3,10,27,.88) 100%)}
+#overlay::before{content:"";position:absolute;inset:-15%;z-index:-2;background:linear-gradient(145deg,#0ea5e9 0%,#2563eb 28%,#312e81 57%,#111827 100%);}
+#overlay::after{content:"";position:absolute;inset:-25%;z-index:-1;pointer-events:none;opacity:.7;background:repeating-linear-gradient(115deg,transparent 0 46px,rgba(255,255,255,.10) 47px 50px,transparent 51px 98px),linear-gradient(115deg,transparent 28%,rgba(250,204,21,.32) 28.2%,rgba(250,204,21,.32) 29%,transparent 29.2% 64%,rgba(34,211,238,.25) 64.2%,rgba(34,211,238,.25) 65%,transparent 65.2%);transform:rotate(-3deg)}
+.card{position:relative;z-index:1;width:min(460px,100%);max-height:calc(100dvh - 20px);padding:clamp(15px,3.5vh,28px) 18px 17px;border:0;border-radius:28px;background:linear-gradient(180deg,rgba(6,20,47,.28),rgba(4,13,32,.74));box-shadow:0 22px 65px rgba(0,0,0,.3);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#title{font-size:clamp(43px,11vw,64px);line-height:.86;letter-spacing:-1.5px;font-weight:1000;font-style:italic;margin:0 auto 14px;max-width:420px;color:#fef08a;-webkit-text-stroke:1.2px #fff7b2;text-shadow:3px 4px 0 #ea580c,6px 7px 0 #7c2d12,0 0 25px rgba(250,204,21,.4);transform:rotate(-2deg)}
+#message{max-width:350px;margin:18px auto 17px;padding:8px 12px;border:1px solid rgba(255,255,255,.28);border-radius:14px;background:rgba(3,15,38,.52);font-weight:750;font-size:13px;color:#eff6ff;text-shadow:0 1px 3px #000}
+#start{display:block;width:min(290px,92%);margin:12px auto 14px;padding:15px 22px;border:3px solid #fff7b2;border-radius:18px;background:linear-gradient(180deg,#fef08a,#facc15 55%,#f59e0b);color:#7c2d12;font-size:clamp(21px,5vw,27px);font-style:italic;font-weight:1000;letter-spacing:1px;text-shadow:0 1px 0 #fff7b2;box-shadow:0 7px 0 #9a3412,0 12px 24px rgba(0,0,0,.35);transition:transform .1s,filter .1s}
+#start:active{transform:translateY(5px);box-shadow:0 2px 0 #9a3412;filter:brightness(.96)}
+#menuButtons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:18px auto 0;max-width:390px}
+#menuButtons button{min-height:47px;padding:10px 8px;border:1px solid rgba(255,255,255,.48);border-radius:15px;background:linear-gradient(145deg,#38bdf8,#2563eb);color:#fff;font-size:clamp(12px,3.5vw,14px);font-weight:950;text-shadow:0 1px 3px #082f49;box-shadow:0 4px 0 rgba(7,30,72,.85),0 7px 14px rgba(0,0,0,.2)}
+#menuButtons button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(7,30,72,.85)}
+#menuButtons #shopBtn{background:linear-gradient(145deg,#fb923c,#ea580c)}
+#menuButtons #skinsBtn{background:linear-gradient(145deg,#c084fc,#7c3aed)}
+#menuButtons #missionsBtn{background:linear-gradient(145deg,#4ade80,#15803d)}
+#menuButtons #settingsBtn{background:linear-gradient(145deg,#94a3b8,#475569)}
+#menuButtons #upgradeBtn{background:linear-gradient(145deg,#f472b6,#be185d)}
+.small{margin:17px auto 0;max-width:360px;font-size:11px;line-height:1.55;color:#dbeafe;text-shadow:0 1px 3px #000}
+#pagePanel{background:rgba(3,12,30,.93);border:1px solid rgba(255,255,255,.25);box-shadow:0 8px 25px rgba(0,0,0,.25)}
+#pagePanel button{border-radius:11px}
+@media(max-height:700px){.card{padding-top:12px;padding-bottom:12px}#title{font-size:clamp(37px,8vh,53px);margin-bottom:8px}#message{margin:10px auto;padding:6px 10px}#start{margin:8px auto 10px;padding:11px 18px}#menuButtons{margin-top:12px;gap:7px}#menuButtons button{min-height:41px;padding:8px 6px}.small{margin-top:11px}}
+
+#splitDivider{display:none;position:fixed;z-index:8;top:0;bottom:0;left:50%;width:3px;transform:translateX(-50%);background:linear-gradient(180deg,rgba(255,255,255,.1),#e2e8f0,rgba(255,255,255,.1));box-shadow:0 0 8px rgba(0,0,0,.8);pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas><div id="splitDivider" aria-hidden="true"></div>
+<div id="phaseBadge" class="hidden">🗽 NOVA YORK · WORLD TOUR</div><div id="hud" class="hidden"><div class="pill">🏁 <span id="score">0</span></div><div class="pill">🪙 <span id="coins">0</span></div><div class="pill">🗝️ <span id="keys">0</span></div><div class="pill">🛹 <span id="board">—</span></div></div>
+<button id="gojoAbility" class="hidden" onclick="useGojoAbility()">🟣 VAZIO ROXO · PRONTO</button><div id="timerWidget" class="hidden"><img id="timerImage" class="hidden" alt=""><span id="timerText">00:00.0</span></div><div id="guardBanner">🚨 O GUARDA ESTÁ ATRÁS DE VOCÊ!</div>
+<div id="overlay"><div class="card"><h1 id="title">TRILHOS<br>INSANOS 3D</h1><p id="message">Corra pelos trilhos de Nova York, desvie dos trens e sobreviva ao trecho especial dos pilares!</p><button id="start">JOGAR</button><button id="twoPlayerBtn" style="display:block;width:min(290px,92%);margin:8px auto;background:linear-gradient(145deg,#34d399,#059669);color:#052e16">👥 MODO 2 JOGADORES</button><button id="revive" class="hidden" style="margin-top:10px;background:#16a34a">RENASCER · 1 🗝️</button><div id="menuButtons"><button id="shopBtn">🛒 LOJA</button><button id="upgradeBtn">⚙️ MELHORIAS</button><button id="skinsBtn">🧢 SKINS</button><button id="missionsBtn">🎯 MISSÕES</button><button id="leaderboardBtn" onclick="window.showWeeklyLeaderboard()">🏆 TOP SEMANAL</button><button id="settingsBtn">⚙️ CONFIGURAÇÕES</button></div><div id="pagePanel" class="hidden"></div><div class="small">FASE: NOVA YORK · WORLD TOUR<br>Teclado: setas + E (Gojo) · P2: J/L e I/K<br>Celular: arraste ← → para trocar de pista e ↑ ↓ para pular/deslizar<br>Gamepad: configure os botões em Configurações.</div></div></div>
+<div id="p2Controls" aria-label="Controles do jogador 2"><button data-p2="left" aria-label="Jogador 2 esquerda">◀</button><button data-p2="right" aria-label="Jogador 2 direita">▶</button><button data-p2="jump" aria-label="Jogador 2 pular">⬆</button><button data-p2="slide" aria-label="Jogador 2 agachar">⬇</button></div><div id="hint" class="hidden">Deslize o dedo na direção desejada</div><div id="saveStatus" style="position:fixed;bottom:calc(34px + env(safe-area-inset-bottom,0));right:10px;font-size:11px;color:#bbf7d0;text-shadow:0 1px 3px #000;pointer-events:none">💾 Salvo</div>
+<div id="trick" style="position:fixed;top:22%;left:0;right:0;text-align:center;font-weight:1000;font-size:clamp(18px,5vw,28px);letter-spacing:1px;color:#fde047;text-shadow:0 3px 6px #000;pointer-events:none;opacity:0;transition:opacity .12s">BURla!</div>
+<input id="timerImagePicker" type="file" accept="image/*" aria-label="Escolher imagem da galeria" style="position:fixed;left:-10000px;top:0;width:1px;height:1px;opacity:0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+const p2Controls=document.getElementById('p2Controls'), twoPlayerBtn=document.getElementById('twoPlayerBtn'), canvas=document.getElementById('view'), phaseBadge=document.getElementById('phaseBadge'), gojoAbilityBtn=document.getElementById('gojoAbility'), timerWidget=document.getElementById('timerWidget'), timerText=document.getElementById('timerText'), timerImage=document.getElementById('timerImage'), guardBanner=document.getElementById('guardBanner'), settingsBtn=document.getElementById('settingsBtn'), saveStatus=document.getElementById('saveStatus'), overlay=document.getElementById('overlay'), title=document.getElementById('title'), message=document.getElementById('message'), startBtn=document.getElementById('start'), reviveBtn=document.getElementById('revive'), shopBtn=document.getElementById('shopBtn'), upgradeBtn=document.getElementById('upgradeBtn'), skinsBtn=document.getElementById('skinsBtn'), missionsBtn=document.getElementById('missionsBtn'), leaderboardBtn=document.getElementById('leaderboardBtn'), pagePanel=document.getElementById('pagePanel'), menuButtons=document.getElementById('menuButtons'), hud=document.getElementById('hud'), hint=document.getElementById('hint'), scoreEl=document.getElementById('score'), coinsEl=document.getElementById('coins'), keysEl=document.getElementById('keys'), boardEl=document.getElementById('board'), trickEl=document.getElementById('trick');
+let trickTimer=0;
+function showTrick(label,duration=850){if(!trickEl)return;trickEl.textContent=label;trickEl.style.opacity='1';clearTimeout(trickTimer);trickTimer=setTimeout(()=>trickEl.style.opacity='0',duration)}
+if(!window.THREE){title.textContent='NÃO CARREGOU';message.textContent='Este jogo 3D precisa de internet para carregar o motor gráfico. Abra o arquivo com conexão e tente novamente.';startBtn.textContent='TENTAR DE NOVO';startBtn.onclick=()=>location.reload();return}
+const THREE=window.THREE;
+let scene,camera,camera2,renderer,clock,player,playerRoot,body,head,legs=[],arms=[],boardMesh,gojoBlindfold,playerHitboxHelper,backCap,auraHands=[],player2Root=null;
+let running=false, score=0, coins=0, p2Coins=0, p2Score=0, p1NoCoinTime=0, p2NoCoinTime=0, leaderboardName=localStorage.getItem('trilhosPlayerName')||'Jogador', p2BoardTime=0, p2SkateMesh=null, p2SelectedSkin=Number(localStorage.getItem('trilhosP2Skin')||0), leaderboardSubmitting=false, bankCoins=Number(localStorage.getItem('trilhosBankCoins')||0), keys=Number(localStorage.getItem('trilhosKeys')||0), elapsed=0, worldSpeed=15, spawnTimer=1, objects=[], decor=[], boardTime=0, hitFlash=0, gameOverFlag=false, reviveCount=0;
+let upgrades=JSON.parse(localStorage.getItem('trilhosUpgrades')||'{"magnet":0,"board":0,"multiplier":0}');
+let ownedSkins=JSON.parse(localStorage.getItem('trilhosSkins')||'[0]'), selectedSkin=Number(localStorage.getItem('trilhosSelectedSkin')||0);
+const skinColors=[0x16b7d5,0xe11d48,0x22c55e,0xa855f7,0xf97316,0xe5e7eb,0x111827,0x0f172a];
+let gojoCooldown=0, gojoProjectiles=[];
+let pillarPhaseActive=false, previousPillarPhase=false;
+keysEl.textContent=keys;
+let reviveCost=1;
+let bestScore=Number(localStorage.getItem('trilhosBestScore')||0);
+let magnetTime=0, sneakersTime=0, scoreBoostTime=0, lastAutoSave=0;
+let gameTimer=0, gameTimerActive=false, lastCommandAt=0, guardTimer=0;
+let gameSettings=(()=>{try{return {...{shadows:true,showHitboxes:false,commandDelay:90,timerEnabled:false,timerSize:1,timerStopMode:'death',timerImage:''},...JSON.parse(localStorage.getItem('trilhosSettings')||'{}')}}catch(e){return {shadows:true,showHitboxes:false,commandDelay:90,timerEnabled:false,timerSize:1,timerStopMode:'death',timerImage:''}}})();
+let ownedSkates=(()=>{try{const v=JSON.parse(localStorage.getItem('trilhosSkates')||'null');if(Array.isArray(v))return v;return localStorage.getItem('trilhosBoardOwned')==='true'?['protector']:[]}catch(_){return localStorage.getItem('trilhosBoardOwned')==='true'?['protector']:[]}})();
+let equippedSkate=localStorage.getItem('trilhosEquippedSkate')||(ownedSkates[0]||'protector');
+let boardOwned=ownedSkates.includes('protector')||localStorage.getItem('trilhosBoardOwned')==='true';
+let missionData=(()=>{try{return {...{coins:0,score:0,keys:0,jumps:0,dodges:0,skateSaves:0,survival:0,claimed:{}},...JSON.parse(localStorage.getItem('trilhosMissions')||'{}')}}catch(e){return {coins:0,score:0,keys:0,jumps:0,dodges:0,skateSaves:0,survival:0,claimed:{}}}})();
+function saveMissions(){try{localStorage.setItem('trilhosMissions',JSON.stringify(missionData))}catch(_){}}
+// 300 missões únicas, geradas em ordem intercalada para variar os objetivos de cada grupo.
+window.allMissions300=(()=>{
+ const specs=[
+  {source:'coins',icon:'🪙',verb:'Acumule',unit:'moedas',targets:Array.from({length:43},(_,i)=>(i+1)*10)},
+  {source:'score',icon:'🏁',verb:'Alcance',unit:'pontos em uma corrida',targets:Array.from({length:43},(_,i)=>(i+1)*500)},
+  {source:'keys',icon:'🔑',verb:'Colete',unit:'chaves',targets:Array.from({length:43},(_,i)=>i+1)},
+  {source:'jumps',icon:'🦘',verb:'Faça',unit:'pulos',targets:Array.from({length:43},(_,i)=>(i+1)*5)},
+  {source:'dodges',icon:'🎯',verb:'Desvie de',unit:'obstáculos',targets:Array.from({length:43},(_,i)=>(i+1)*5)},
+  {source:'skateSaves',icon:'🛹',verb:'Seja salvo pelo skate',unit:'vezes',targets:Array.from({length:43},(_,i)=>i+1)},
+  {source:'survival',icon:'⏱️',verb:'Sobreviva por',unit:'segundos no total',targets:Array.from({length:42},(_,i)=>(i+1)*30)}
+ ];
+ const out=[];for(let level=0;out.length<300;level++){for(const sp of specs){if(level>=sp.targets.length||out.length>=300)continue;const target=sp.targets[level],n=out.length+1;out.push({id:'m'+String(n).padStart(3,'0'),source:sp.source,target,label:`${sp.icon} ${sp.verb} ${target} ${sp.unit}`,reward:100+((n*37)%201)});}}
+ return out;
+})();
+function saveProgress(){
+ try{saveMissions();
+  localStorage.setItem('trilhosBankCoins',String(bankCoins));
+  localStorage.setItem('trilhosKeys',String(keys));
+  localStorage.setItem('trilhosUpgrades',JSON.stringify(upgrades));
+  localStorage.setItem('trilhosSkins',JSON.stringify(ownedSkins));
+  localStorage.setItem('trilhosSelectedSkin',String(selectedSkin));
+  localStorage.setItem('trilhosSkates',JSON.stringify(ownedSkates));localStorage.setItem('trilhosEquippedSkate',equippedSkate);
+  localStorage.setItem('trilhosBestScore',String(bestScore));
+  localStorage.setItem('trilhosSettings',JSON.stringify(gameSettings));
+  if(saveStatus){saveStatus.textContent='💾 Salvo';saveStatus.style.color='#bbf7d0'}
+ }catch(e){if(saveStatus){saveStatus.textContent='⚠️ Não salvou';saveStatus.style.color='#fecaca'}}
+}
+function autosaveNow(){
+ saveProgress();
+ if(saveStatus){saveStatus.textContent='💾 Auto-save';setTimeout(()=>{if(saveStatus)saveStatus.textContent='💾 Salvo'},900)}
+}
+function saveSettings(){try{localStorage.setItem('trilhosSettings',JSON.stringify(gameSettings))}catch(e){showTrick('NÃO FOI POSSÍVEL SALVAR A IMAGEM')}}
+function formatGameTimer(seconds){const m=Math.floor(seconds/60),s=seconds%60;return String(m).padStart(2,'0')+':'+s.toFixed(1).padStart(4,'0')}
+function updateTimerWidget(){
+ timerWidget.classList.toggle('hidden',!gameSettings.timerEnabled);
+ timerText.textContent=formatGameTimer(gameTimer);
+ const size=Math.max(.6,Math.min(2.2,Number(gameSettings.timerSize)||1));timerWidget.style.fontSize=(18*size)+'px';timerWidget.style.padding=(5*size)+'px '+(11*size)+'px';
+ timerImage.classList.toggle('hidden',!gameSettings.timerImage);if(gameSettings.timerImage)timerImage.src=gameSettings.timerImage;timerImage.style.width=(28*size)+'px';timerImage.style.height=(28*size)+'px';
+}
+function applyShadowSetting(){if(renderer)renderer.shadowMap.enabled=!!gameSettings.shadows; if(scene)scene.traverse(o=>{if(o.isDirectionalLight)o.castShadow=!!gameSettings.shadows});}
+const timerImagePicker=document.getElementById('timerImagePicker');
+window.chooseTimerImage=function(){if(timerImagePicker){timerImagePicker.value='';timerImagePicker.click()}};
+window.setTimerImage=async function(input){
+ const file=input&&input.files&&input.files[0];if(!file)return;
+ if(file.type&&!file.type.startsWith('image/')){showTrick('ESCOLHA UMA IMAGEM');input.value='';return}
+ showTrick('CARREGANDO IMAGEM...');
+ try{
+  const sourceUrl=URL.createObjectURL(file);
+  const img=new Image();
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=sourceUrl});
+  const maxSide=512, scale=Math.min(1,maxSide/Math.max(img.naturalWidth||img.width,img.naturalHeight||img.height));
+  const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round((img.naturalWidth||img.width)*scale));canvas.height=Math.max(1,Math.round((img.naturalHeight||img.height)*scale));
+  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('canvas unavailable');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  URL.revokeObjectURL(sourceUrl);
+  let dataUrl=canvas.toDataURL('image/webp',.82);if(!dataUrl.startsWith('data:image/'))throw new Error('image conversion failed');
+  // Keep the stored image small enough for mobile localStorage.
+  if(dataUrl.length>450000){dataUrl=canvas.toDataURL('image/jpeg',.68)}
+  const previous=gameSettings.timerImage;gameSettings.timerImage=dataUrl;
+  try{localStorage.setItem('trilhosSettings',JSON.stringify(gameSettings))}catch(storageError){gameSettings.timerImage=previous;throw new Error('storage full')}
+  updateTimerWidget();showMenuPage('settings');showTrick('IMAGEM ADICIONADA AO CRONÔMETRO!');
+ }catch(err){console.error('Falha ao importar imagem do cronômetro:',err);showTrick('NÃO FOI POSSÍVEL SALVAR. TENTE OUTRA IMAGEM.');}
+ finally{if(input)input.value=''}
+};
+if(timerImagePicker)timerImagePicker.addEventListener('change',()=>window.setTimerImage(timerImagePicker));
+window.resetTimerImage=function(){gameSettings.timerImage='';saveSettings();updateTimerWidget();showMenuPage('settings')};
+window.changeSetting=function(key,value){if(key==='shadows')gameSettings.shadows=value==='true';else if(key==='showHitboxes'){gameSettings.showHitboxes=value==='true';if(playerHitboxHelper)playerHitboxHelper.visible=gameSettings.showHitboxes;for(const o of objects){if(o.hitboxHelper)o.hitboxHelper.visible=gameSettings.showHitboxes&&!o.passed}}else if(key==='timerEnabled')gameSettings.timerEnabled=value==='true';else if(key==='commandDelay')gameSettings.commandDelay=Math.max(0,Math.min(500,Number(value)||0));else if(key==='timerSize')gameSettings.timerSize=Math.max(.6,Math.min(2.2,Number(value)||1));else if(key==='timerStopMode')gameSettings.timerStopMode=value;saveSettings();applyShadowSetting();updateTimerWidget();if(key==='timerEnabled'){if(!running){gameTimer=0;gameTimerActive=gameSettings.timerEnabled}else{gameTimerActive=gameSettings.timerEnabled}}};
+window.setTwoPlayerMode=function(on){twoPlayerMode=!!on;localStorage.setItem('trilhosTwoPlayer',twoPlayerMode?'1':'0');if(twoPlayerBtn)twoPlayerBtn.textContent=twoPlayerMode?'👥 MODO 2 JOGADORES ✓':'👥 MODO 2 JOGADORES';if(player2Root)player2Root.visible=twoPlayerMode&&running;if(p2Controls)p2Controls.style.display='none';showMenuPage('settings')};
+window.setP2Side=function(side){player2Side=side==='left'?'left':'right';localStorage.setItem('trilhosP2Side',player2Side);if(p2Controls)p2Controls.className=player2Side;showMenuPage('settings')};
+window.setP2Skin=function(v){p2SelectedSkin=Math.max(0,Math.min(7,Number(v)||0));localStorage.setItem('trilhosP2Skin',String(p2SelectedSkin));applyP2Skin();showMenuPage('settings');showTrick('🧢 SKIN DO JOGADOR 2 ATUALIZADA!')};
+window.setPlayerName=function(v){leaderboardName=String(v||'Jogador').trim().slice(0,18)||'Jogador';localStorage.setItem('trilhosPlayerName',leaderboardName)};
+window.setPlayerInput=function(player,mode){if(!['mobile','gamepad','keyboard'].includes(mode))return;if(player===1){player1InputMode=mode;localStorage.setItem('trilhosP1Input',mode)}else{player2InputMode=mode;localStorage.setItem('trilhosP2Input',mode)}showMenuPage('settings');showTrick('🎮 CONTROLE DO JOGADOR ATUALIZADO!')};
+window.setLandscape=async function(on){try{if(on){if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');document.body.classList.add('landscapeHint');showTrick('📱 TELA DEITADA ATIVADA')}else{if(screen.orientation&&screen.orientation.unlock)screen.orientation.unlock();document.body.classList.remove('landscapeHint');showTrick('ORIENTAÇÃO AUTOMÁTICA')} }catch(e){showTrick('GIRE O CELULAR MANUALMENTE PARA DEITAR',1500)}};
+function activateBoard2(){if(!running||!twoPlayerMode||p2BoardTime>0)return;if(!ownedSkates.includes(equippedSkate)){showTrick('P2: O JOGADOR 1 PRECISA TER UM SKATE!');return}p2BoardTime=8+(upgrades.board||0)*.8;if(p2SkateMesh){p2SkateMesh.visible=true;const colors={protector:0xa855f7,speed:0xf97316,drift:0x38bdf8,glide:0x22c55e,jump:0xfacc15};if(p2SkateMesh.children[0]&&p2SkateMesh.children[0].material.color)p2SkateMesh.children[0].material.color.setHex(colors[equippedSkate]||0xa855f7)}showTrick('🛹 P2: '+skateName(equippedSkate).toUpperCase()+'!')}
+function applyP2Skin(){if(!player2Root)return;const isGojo=p2SelectedSkin===6,isAura=p2SelectedSkin===7;const meshes=[];player2Root.traverse(o=>{if(o.isMesh)meshes.push(o)});for(const m of meshes){if(m.userData.p2OriginalColor===undefined&&m.material&&m.material.color)m.userData.p2OriginalColor=m.material.color.getHex();if(m.material&&m.material.color){if(m.userData.p2SkinTint!==undefined)m.material.color.setHex(m.userData.p2SkinTint);else if(m.userData.p2OriginalColor!==undefined)m.material.color.setHex(m.userData.p2OriginalColor)}}const p2body=player2Root.children.find(c=>c.type==='Group');if(p2body){const parts=p2body.children.filter(c=>c.isMesh);if(parts[0]&&parts[0].material&&parts[0].material.color)parts[0].material.color.setHex(isGojo?0x111827:(skinColors[p2SelectedSkin]||skinColors[0]));if(parts[2]&&parts[2].material&&parts[2].material.color)parts[2].material.color.setHex(isGojo?0xf8fafc:0x111827);for(const a of p2body.children.filter(c=>c.type==='Group')){if(a.children[0]&&a.children[0].material&&a.children[0].material.color)a.children[0].material.color.setHex(isGojo?0x111827:(skinColors[p2SelectedSkin]||skinColors[0]));for(const child of a.children){if(child.type==='Group')child.visible=isAura}}}}
+function p2Action(a){if(!running||!twoPlayerMode)return;if(a==='skate'){activateBoard2();return}if(a==='left')state2.lane=Math.max(0,state2.lane-1);if(a==='right')state2.lane=Math.min(2,state2.lane+1);if(a==='jump'&&state2.y<=.02){state2.vy=8.8;showTrick('P2: PULO!')}if(a==='slide'){if(state2.y>.04||state2.vy>.1){state2.vy=Math.min(state2.vy,-20);state2.sliding=.48;showTrick('P2: ATERRISSAGEM IMEDIATA!')}else state2.sliding=.68}}
+for(const b of document.querySelectorAll('[data-p2]')){b.addEventListener('pointerdown',e=>{e.preventDefault();p2Action(b.dataset.p2)})}
+function showGuard(){guardBanner.style.display='block';clearTimeout(guardTimer);guardTimer=setTimeout(()=>guardBanner.style.display='none',1350)}
+
+const laneX=[-2.2,0,2.2], state={lane:1,x:0,y:0,vy:0,sliding:0,invuln:0,onTrain:0,platformHeight:2.72,airJump:false,ridingTrain:null,fastLanding:false,fastLandingTimer:0}, state2={lane:1,x:.55,y:0,vy:0,sliding:0};
+let twoPlayerMode=localStorage.getItem('trilhosTwoPlayer')==='1', player2Side=localStorage.getItem('trilhosP2Side')||'right';
+const defaultInputMode=matchMedia('(pointer:coarse)').matches?'mobile':'keyboard';
+let player1InputMode=localStorage.getItem('trilhosP1Input')||defaultInputMode, player2InputMode=localStorage.getItem('trilhosP2Input')||'keyboard';
+const mat=(color,roughness=.75,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+const glow=(color,emissive,intensity=1)=>new THREE.MeshStandardMaterial({color,emissive,emissiveIntensity:intensity,roughness:.35,metalness:.15});
+const gojoCloth=mat(0x111827), gojoHairMat=mat(0xf8fafc), gojoBlindfoldMat=glow(0x172554,0x2563eb,1.8), hollowPurpleMat=glow(0x9333ea,0x7e22ce,3.2);
+const M={
+ ground:mat(0x263544), sleeper:mat(0x65717b), rail:mat(0xc0cbd3,.3,.7),
+ ballast:mat(0x39444c), yellow:mat(0xfacc15), coin:mat(0xffcf32,.25,.65),
+ red:mat(0xe0443e), train:mat(0x1676a8,.32,.2), glass:mat(0x8be0ff,.2,.15),
+ dark:mat(0x172638), barrier:mat(0xf07828), purple:mat(0xa855f7),
+ skin:mat(0xeab88b), shirt:mat(0x16b7d5), pants:mat(0x263c8b),
+ shoe:mat(0xf3f5f7), buildingA:mat(0x172747), buildingB:mat(0x243457),
+ window:glow(0xffd477,0xffa51f,1.25), green:mat(0x347c69), white:mat(0xf1f5f9), neon:glow(0x38bdf8,0x087cf0,1.3), lamp:glow(0xffd166,0xff9b16,1.5), key:mat(0x63e6be,.25,.7), ramp:mat(0x6b7280), spring:mat(0x22c55e)
+};
+function box(parent,w,h,d,material,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function cylinder(parent,r1,r2,h,material,x,y,z,seg=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),material);m.position.set(x,y,z);m.castShadow=true;parent.add(m);return m}
+function setup(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x07152f);scene.fog=new THREE.Fog(0x07152f,34,150);
+ camera=new THREE.PerspectiveCamera(62,Math.max(1,innerWidth/2)/innerHeight,.1,220);camera.position.set(0,5.2,10.5);camera2=new THREE.PerspectiveCamera(62,Math.max(1,innerWidth/2)/innerHeight,.1,220);camera2.position.set(.55,5.2,11.75);
+ renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=gameSettings.shadows;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputEncoding=THREE.sRGBEncoding;
+ scene.add(new THREE.HemisphereLight(0x8db7ff,0x171329,1.35));
+ const sun=new THREE.DirectionalLight(0x93baff,1.25);sun.position.set(-8,18,10);sun.castShadow=gameSettings.shadows;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
+ const floor=new THREE.Mesh(new THREE.PlaneGeometry(180,260),M.ground);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.18,-70);floor.receiveShadow=true;scene.add(floor);
+ // ballast strip and three tracks
+ for(let l=0;l<3;l++){
+  const x=laneX[l];
+  const bed=new THREE.Mesh(new THREE.BoxGeometry(1.95,.16,260),M.ballast);bed.position.set(x,-.08,-70);scene.add(bed);
+  for(const side of [-.66,.66]){const rail=new THREE.Mesh(new THREE.BoxGeometry(.09,.12,260),M.rail);rail.position.set(x+side,.06,-70);scene.add(rail)}
+ }
+ // concrete platform edges and yellow safety strips beside the outer tracks
+ for(const side of [-1,1]){
+  const edge=new THREE.Mesh(new THREE.BoxGeometry(.28,.24,260),M.dark);
+  edge.position.set(side*5.05,-.04,-70);scene.add(edge);
+  const strip=new THREE.Mesh(new THREE.BoxGeometry(.09,.035,260),M.yellow);
+  strip.position.set(side*4.86,.095,-70);scene.add(strip);
+ }
+ // sleepers, shifted continuously during run
+ for(let i=0;i<64;i++){const z=7-i*3.6;for(let l=0;l<3;l++){const s=new THREE.Mesh(new THREE.BoxGeometry(1.72,.12,.34),M.sleeper);s.position.set(laneX[l],-.02,z);scene.add(s);decor.push({mesh:s,kind:'sleeper',span:230})}}
+ // skyline buildings on both sides
+ for(let i=0;i<36;i++){const side=i%2?1:-1,z=-8-Math.floor(i/2)*8.5,h=rand(7,19),w=rand(3.4,6);
+  const b=new THREE.Group();const shell=box(b,w,h,w*.75,i%3?M.buildingA:M.buildingB,0,h/2,0);shell.castShadow=false;
+  for(let yy=1.5;yy<h-1;yy+=2.1)for(let xx=-w/2+.55;xx<w/2-.25;xx+=1.15){box(b,.42,.72,.035,M.window,xx,yy,w*.375+.02)}
+  b.position.set(side*(7.5+rand(0,5)),0,z);scene.add(b);decor.push({mesh:b,kind:'building',span:160,side})
+ }
+ // Táxis amarelos estilizados nas ruas laterais: identidade visual da fase Nova York.
+ for(let i=0;i<10;i++){
+  const side=i%2?1:-1,z=-12-i*19;const taxi=new THREE.Group();
+  box(taxi,1.28,.48,2.05,M.yellow,0,.56,0);box(taxi,.78,.38,.94,M.glass,0,.96,-.08);
+  box(taxi,.48,.12,.28,M.white,0,.88,.18);
+  for(const zz of [-.66,.66])for(const xx of [-.54,.54])cylinder(taxi,.17,.17,.1,M.dark,xx,.22,zz,10);
+  taxi.position.set(side*(6.2+rand(0,.8)),0,z);scene.add(taxi);decor.push({mesh:taxi,kind:'taxi',span:210});
+ }
+ // grounded platform lights and illuminated signs (nothing floats in the sky)
+ for(let i=0;i<22;i++){
+  const side=i%2?1:-1, z=-5-i*10.5;
+  const pole=new THREE.Group();
+  cylinder(pole,.075,.095,3.7,M.dark,0,1.85,0,8);
+  box(pole,.62,.12,.32,M.neon,0,3.55,0);
+  box(pole,.42,.07,.2,M.lamp,0,3.43,.03);
+  pole.position.set(side*5.5,0,z);scene.add(pole);decor.push({mesh:pole,kind:'lamp',span:231});
+  const sign=new THREE.Group();
+  box(sign,1.2,.48,.12,M.dark,0,2.65,0);
+  box(sign,.92,.12,.15,i%3===0?M.red:M.neon,0,2.65,.08);
+  sign.position.set(side*6.1,0,z-3.5);scene.add(sign);decor.push({mesh:sign,kind:'sign',span:231});
+ }
+ // far lamps
+ for(let i=0;i<16;i++){const g=new THREE.Group();cylinder(g,.07,.09,4,M.dark,0,2,0);box(g,.65,.12,.14,M.yellow,.24,3.8,0);g.position.set(i%2?5.6:-5.6,0,-i*13-4);scene.add(g);decor.push({mesh:g,kind:'lamp',span:210})}
+ // Skyline de Manhattan ao fundo: torres iluminadas e silhueta escalonada inspirada no Empire State.
+ const skylineMat=[M.buildingA,M.buildingB,M.dark];
+ for(let i=0;i<13;i++){
+  const x=-24+i*4, h=rand(9,22), w=rand(2.8,4.4), z=-142-rand(0,3);
+  const tower=new THREE.Group();
+  box(tower,w,h,w*.55,skylineMat[i%3],0,h/2,0);
+  for(let yy=1.2;yy<h-1;yy+=1.7)for(let xx=-w/2+.35;xx<w/2-.15;xx+=.7){
+   const win=box(tower,.22,.42,.025,(Math.random()>.32?M.window:M.lamp),xx,yy,w*.275+.02);win.castShadow=false;
+  }
+  tower.position.set(x,0,z);scene.add(tower);
+ }
+ const empire=new THREE.Group();
+ box(empire,4.2,13,2.2,M.buildingB,0,6.5,0);
+ box(empire,3.3,4.5,1.9,M.buildingB,0,15.25,0);
+ box(empire,2.25,3.4,1.55,M.buildingB,0,19.2,0);
+ box(empire,1.25,2.4,1.1,M.buildingB,0,22.1,0);
+ cylinder(empire,.045,.09,4.2,M.neon,0,25.4,0,8);
+ for(let yy=1.2;yy<21;yy+=1.45)for(let xx=-1.55;xx<=1.56;xx+=.62){const win=box(empire,.18,.36,.035,(Math.random()>.25?M.window:M.lamp),xx,yy,1.13);win.castShadow=false;}
+ empire.position.set(0,0,-151);scene.add(empire);
+ // Placas de rua coloridas nas laterais para dar mais identidade de metrô nova-iorquino.
+ for(let i=0;i<8;i++){
+  const side=i%2?1:-1,z=-18-i*24,sign=new THREE.Group();
+  box(sign,1.55,.62,.14,M.dark,0,2.85,0);
+  box(sign,1.34,.4,.08,i%3===0?M.red:(i%3===1?M.neon:M.green),0,2.85,.09);
+  box(sign,.9,.055,.035,M.white,0,2.85,.145);
+  sign.position.set(side*5.95,0,z);scene.add(sign);decor.push({mesh:sign,kind:'sign',span:210});
+ }
+ // player group
+ playerRoot=new THREE.Group();scene.add(playerRoot);
+ body=new THREE.Group();playerRoot.add(body);
+ box(body,.66,.83,.4,M.shirt,0,1.08,0);
+ head=new THREE.Mesh(new THREE.SphereGeometry(.27,16,12),M.skin);head.position.set(0,1.78,0);head.castShadow=true;body.add(head);
+ // hair cap
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.275,14,8,0,Math.PI*2,0,Math.PI*.58),M.dark);hair.position.set(0,1.84,0);hair.castShadow=true;body.add(hair);
+ gojoBlindfold=box(body,.48,.105,.43,gojoBlindfoldMat,0,1.79,-.205);gojoBlindfold.visible=false;
+ // Boné para trás da skin Aura (skin 7). A aba fica atrás da cabeça.
+ backCap=new THREE.Group();body.add(backCap);
+ const capTop=new THREE.Mesh(new THREE.SphereGeometry(.285,16,10,0,Math.PI*2,0,Math.PI*.52),mat(0x111827,.05,.65));capTop.position.set(0,1.98,0);backCap.add(capTop);
+ const capBand=new THREE.Mesh(new THREE.CylinderGeometry(.255,.27,.09,16),mat(0x020617,.05,.55));capBand.position.set(0,1.91,0);backCap.add(capBand);
+ const capBill=new THREE.Mesh(new THREE.BoxGeometry(.32,.055,.22),mat(0x111827,.05,.55));capBill.position.set(0,1.92,.29);backCap.add(capBill);backCap.visible=false;
+ for(const s of [-1,1]){
+  const leg=new THREE.Group();leg.position.set(s*.19,.69,0);body.add(leg);box(leg,.23,.68,.25,M.pants,0,-.25,0);box(leg,.28,.15,.4,M.shoe,0,-.58,-.06);legs.push(leg);
+  const arm=new THREE.Group();arm.position.set(s*.39,1.38,0);body.add(arm);box(arm,.19,.62,.2,M.shirt,0,-.24,0);cylinder(arm,.09,.09,.16,M.skin,0,-.57,0);arms.push(arm);
+  const aura=new THREE.Group();aura.position.set(0,-.60,0);arm.add(aura);
+  const auraCore=new THREE.Mesh(new THREE.SphereGeometry(.105,10,8),new THREE.MeshBasicMaterial({color:0x38bdf8,transparent:true,opacity:.9}));aura.add(auraCore);
+  const auraRing=new THREE.Mesh(new THREE.TorusGeometry(.17,.025,6,14),new THREE.MeshBasicMaterial({color:0x67e8f9,transparent:true,opacity:.8}));auraRing.rotation.x=Math.PI/2;aura.add(auraRing);aura.visible=false;auraHands.push(aura);
+ }
+ boardMesh=new THREE.Group();boardMesh.name='playerSkateBoard';playerRoot.add(boardMesh);box(boardMesh,.88,.12,.45,M.purple,0,.17,.05);for(const x of [-.3,.3])cylinder(boardMesh,.09,.09,.1,M.dark,x,.08,.17,10);boardMesh.visible=false;
+ playerHitboxHelper=makeHitboxHelper(.82,1.92,.68,0x22e6ff);playerHitboxHelper.position.set(0,.96,0);
+ player2Root=playerRoot.clone(true);player2Root.position.set(.55,0,1.25);player2Root.visible=false;scene.add(player2Root);p2SkateMesh=player2Root.getObjectByName('playerSkateBoard');if(p2SkateMesh)p2SkateMesh.visible=false;player2Root.traverse(o=>{if(o.isMesh&&o.material)o.material=o.material.clone()});applyP2Skin();
+ clock=new THREE.Clock();
+}
+function rand(a,b){return a+Math.random()*(b-a)}
+function makeCoin(lane,z,side=0,height=1.02){
+ const group=new THREE.Group();
+ const coin=new THREE.Mesh(new THREE.TorusGeometry(.29,.105,8,18),M.coin);
+ const localY=height>3?0.55:height>2?height:1.02;
+ coin.position.set(side,localY,0);coin.rotation.y=Math.PI/2;coin.castShadow=true;group.add(coin);
+ const core=new THREE.Mesh(new THREE.CircleGeometry(.18,16),M.yellow);
+ core.position.set(side,localY,.02);group.add(core);
+ group.position.set(laneX[lane],height>3?2.72:0,z);scene.add(group);
+ objects.push({group,type:'coin',lane,z,passed:false,phase:rand(0,6),sideOffset:side,height});
+}
+function makeHitboxHelper(w,h,d,color=0xff3355){
+ const geo=new THREE.EdgesGeometry(new THREE.BoxGeometry(w,h,d));
+ const lines=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color,depthTest:false,transparent:true,opacity:.95}));
+ lines.renderOrder=999;lines.visible=!!gameSettings.showHitboxes;scene.add(lines);return lines;
+}
+function obstacleBounds(type){
+ const map={train:[1.9,2.75,.48,1.38],barrier:[1.72,.78,.48,.40],jumpblock:[1.75,1.35,.55,.68],slideblock:[1.95,1.75,.48,.88],overhead:[1.95,2.05,.42,1.02],wall:[1.9,1.2,.78,.60],pillar:[.62,2.3,.55,1.15]};return map[type]||[1.8,1.8,.6,.9];
+}
+function makeObstacle(type,lane,z,movingOverride){
+ const g=new THREE.Group(),x=laneX[lane];g.position.set(x,0,z);
+ if(type==='train'){  box(g,1.78,2.65,6.8,M.train,0,1.38,0);
+  box(g,1.58,.72,6.5,M.dark,0,2.05,.02);
+  for(let zz=-2.5;zz<=2.51;zz+=1.25)box(g,1.38,.63,.035,M.glass,0,1.9,zz);
+  box(g,1.82,.13,6.9,M.red,0,.34,0);
+  box(g,1.45,.12,6.25,M.neon,0,2.48,0);
+  for(const zz of [-2.8,2.8])for(const xx of [-.58,.58]){
+   cylinder(g,.25,.25,.16,M.dark,xx,.25,zz,12);
+  }
+  for(const xx of [-.48,.48])box(g,.18,.13,.12,M.lamp,xx,.82,3.42);
+  } else if(type==='barrier'){
+  // Low barrier: jump over OR slide under.
+  box(g,1.55,.72,.36,M.barrier,0,.40,0);
+  box(g,1.66,.14,.4,M.yellow,0,.59,-.02);
+  for(let xx=-.48;xx<=.49;xx+=.48)box(g,.12,.34,.4,M.white,xx,.37,-.02);
+ } else if(type==='jumpblock'){
+  // Bottom closed: only jump over it.
+  box(g,1.58,1.2,.42,M.red,0,.65,0);
+  box(g,1.68,.15,.46,M.yellow,0,1.22,0);
+ } else if(type==='slideblock'){
+  // High bar: only slide underneath.
+  box(g,1.7,.18,.4,M.purple,0,1.55,0);
+  for(const xx of [-.72,.72])box(g,.18,1.5,.32,M.purple,xx,.76,0);
+ } else if(type==='wall'){
+  // Low concrete wall: jump onto/over it; coins are placed above its top.
+  box(g,1.78,1.08,.68,M.ramp,0,.55,0);
+  box(g,1.82,.12,.72,M.yellow,0,1.08,0);
+  for(const xx of [-.55,0,.55])box(g,.08,.7,.70,M.dark,xx,.52,.01);
+ } else if(type==='pillar'){
+  cylinder(g,.23,.28,2.2,M.neon,0,1.1,0,8);
+  box(g,.58,.14,.48,M.yellow,0,2.18,0);
+ } else {
+  box(g,1.75,.22,.35,M.purple,0,2.02,0);
+  for(const xx of [-.72,.72])box(g,.18,1.9,.3,M.purple,xx,1.05,0);
+ }
+ scene.add(g);const [hbw,hbh,hbd,hby]=obstacleBounds(type);const hitboxHelper=makeHitboxHelper(hbw,hbh,hbd,0xff3355);hitboxHelper.position.set(x,hby,z);objects.push({group:g,type,lane,z,passed:false,moving:false,movePhase:0,hitboxHelper,halfDepth:hbd/2});
+}
+function makePowerup(type,lane,z){
+ const g=new THREE.Group();
+ const colors={magnet:0xf472b6,sneakers:0x4ade80,x2:0xfacc15};
+ const color=colors[type]||0x38bdf8;
+ const orb=new THREE.Mesh(new THREE.OctahedronGeometry(.43),glow(color,color,1.3));
+ orb.position.y=1.55;g.add(orb);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.5,.055,7,18),mat(0xffffff,.3,.3));
+ ring.position.y=1.55;g.add(ring);
+ g.position.set(laneX[lane],0,z);scene.add(g);
+ objects.push({group:g,type:'powerup',power:type,lane,z,passed:false,phase:rand(0,6)});
+}
+function makeKey(lane,z){
+ const g=new THREE.Group(), x=laneX[lane];
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.22,.075,8,18),M.key);
+ ring.position.set(0,2.05,0);ring.rotation.y=Math.PI/2;g.add(ring);
+ box(g,.12,.34,.12,M.key,.22,2.05,0);
+ box(g,.22,.09,.12,M.key,.3,1.92,0);
+ g.position.set(x,0,z);scene.add(g);objects.push({group:g,type:'key',lane,z,passed:false,phase:rand(0,6)});
+}
+function spawnCoinTrail(lane,z,count=8,spacing=2.8,side=0,height=1.02){
+ // Fileiras mais longas, mas com espaço entre moedas para não virar um bloco contínuo.
+ for(let i=0;i<count;i++)makeCoin(lane,z-i*spacing,side,height);
+}
+function spawnThreeCoinRows(z){
+ // Desafio curto: três moedas de profundidade em cada uma das três pistas.
+ // Dá para evitar a coleta com um único salto, mas é preciso saltar bem perto.
+ const rows=3, spacing=3.2;
+ for(let i=0;i<rows;i++){
+  for(let lane=0;lane<3;lane++){
+   makeCoin(lane,z-i*spacing,0,1.02);
+   if(i===0&&lane===0)objects[objects.length-1].tripleRowsWarning=true;
+  }
+ }
+ showTrick('🪙 TRÊS FILEIRAS!');
+}
+function spawnPattern(){
+ // Fase inspirada em Nova York (World Tour). Trens são obstáculos: não há escalada nem trens achatados.
+ const lane=Math.floor(Math.random()*3), r=Math.random(), z=-100;
+ // 20% de chance de aparecer o desafio clássico das três fileiras de moedas.
+ if(Math.random()<.20){
+  spawnThreeCoinRows(z);
+  // Mantém uma pista de fuga possível, sem obstáculos bloqueando as três pistas.
+  return;
+ }
+ if(pillarPhaseActive && r<.58){
+  // Os pilares só são criados durante o trecho especial dos pilares.
+  makeObstacle('pillar',lane,z);
+  if(Math.random()<.7)makeObstacle('barrier',(lane+1+Math.floor(Math.random()*2))%3,z-9);
+  if(Math.random()<.35)makeKey((lane+2)%3,z-7);
+ }else if(r<.36){
+  makeObstacle('train',lane,z);
+  if(Math.random()<.78){const other=(lane+1+Math.floor(Math.random()*2))%3;spawnCoinTrail(other,z-4,7,2.8)}
+ }else if(r<.58){
+  makeObstacle('train',lane,z);
+  const blocked=(lane+1+Math.floor(Math.random()*2))%3;
+  makeObstacle('barrier',blocked,z-8);
+  const safe=3-lane-blocked;spawnCoinTrail(safe,z-3,7,2.8);
+ }else if(r<.81){
+  makeObstacle('barrier',lane,z);
+  makeObstacle('jumpblock',(lane+1)%3,z-9);
+  spawnCoinTrail((lane+2)%3,z-4,8,2.8);
+ }else{
+  makeObstacle('slideblock',lane,z);
+  makeObstacle('overhead',(lane+1)%3,z-10);
+  spawnCoinTrail((lane+2)%3,z-3,7,2.8);
+  if(Math.random()<.45)makeKey((lane+2)%3,z-7);
+ }
+}
+function jump(){
+ if(!running)return;
+ missionData.jumps=(missionData.jumps||0)+1;saveMissions();
+ const superJump=boardTime>0&&equippedSkate==='jump';
+ const jumpPower=superJump?13.2:(sneakersTime>0?11.5:8.8);
+ if(state.sliding>0){state.fastLanding=false;state.fastLandingTimer=0;state.sliding=0;state.vy=jumpPower;state.y=Math.max(.02,state.y);showTrick('PULO DO AGACHAMENTO!');return}
+ if(state.y<=.015){state.fastLanding=false;state.fastLandingTimer=0;state.vy=jumpPower;state.y=.02;state.airJump=false;showTrick(superJump?'🛹 SUPER PULO!':'PULO!')}
+ else if(state.airJump){state.fastLanding=false;state.fastLandingTimer=0;state.vy=superJump?12.4:(sneakersTime>0?10.4:8.2);state.airJump=false;showTrick('SEGUNDO PULO!')}
+}
+function roll(){if(!running)return;if(state.y>.04||state.vy>.1){state.fastLanding=true;state.fastLandingTimer=.65;state.vy=Math.min(state.vy,-20);state.sliding=.48;showTrick('ATERRISSAGEM RÁPIDA!')}else state.sliding=.68}
+function changeLane(d){if(running)state.lane=Math.max(0,Math.min(2,state.lane+d))}
+function activateBoard(){if(!running||boardTime>0)return;if(!ownedSkates.includes(equippedSkate)){showTrick('🛹 COMPRE UM SKATE NA LOJA!');return}boardTime=8+(upgrades.board||0)*.8;state.invuln=0;boardMesh.visible=true;const colors={protector:0xa855f7,speed:0xf97316,drift:0x38bdf8,glide:0x22c55e,jump:0xfacc15};if(boardMesh.children[0])boardMesh.children[0].material.color.setHex(colors[equippedSkate]||0xa855f7);boardEl.textContent='ATIVO';showTrick('🛹 '+skateName(equippedSkate).toUpperCase()+' ATIVADO!')}
+let lastTap=0;
+function pointerDown(e){if(!running)return;gesture={x:e.clientX,y:e.clientY,id:e.pointerId};try{canvas.setPointerCapture(e.pointerId)}catch(_){}}
+let gesture=null;
+function runPlayerAction(player,action){if(player===2){p2Action(action);return}if(!running)return;if(action==='left')changeLane(-1);else if(action==='right')changeLane(1);else if(action==='jump')jump();else if(action==='slide')roll()}
+function pointerUp(e){if(!gesture||!running)return;const startX=gesture.x,startY=gesture.y,dx=e.clientX-startX,dy=e.clientY-startY,dist=Math.hypot(dx,dy);gesture=null;
+ // Mobile mode uses the classic Subway-Surfers-style swipe gesture. In two-player mode,
+ // each mobile player swipes on their own half of the screen (P2 side is configurable).
+ if(dist<22){const now=performance.now();if(twoPlayerMode&&player1InputMode==='mobile'&&player2InputMode==='mobile'){if(now-lastTap<330){const p2OnLeft=player2Side==='left';if((startX<innerWidth/2)===p2OnLeft)activateBoard2();else activateBoard()}lastTap=now}else if(player1InputMode==='mobile'&&(!twoPlayerMode||player2InputMode!=='mobile')){if(now-lastTap<330)activateBoard();lastTap=now}else if(twoPlayerMode&&player2InputMode==='mobile'){if(now-lastTap<330)activateBoard2();lastTap=now}return}
+ let target=0;
+ if(twoPlayerMode&&player1InputMode==='mobile'&&player2InputMode==='mobile'){
+  const p2OnLeft=player2Side==='left';const isLeft=startX<innerWidth/2;target=(isLeft===p2OnLeft)?2:1;
+ }else if(twoPlayerMode&&player2InputMode==='mobile'&&player1InputMode!=='mobile'){
+  const p2OnLeft=player2Side==='left';if((startX<innerWidth/2)===p2OnLeft)target=2;
+ }else if(player1InputMode==='mobile')target=1;
+ if(!target)return;
+ const commandNow=performance.now();if(target===1&&commandNow-lastCommandAt<gameSettings.commandDelay)return;if(target===1)lastCommandAt=commandNow;
+ const action=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy<0?'jump':'slide');runPlayerAction(target,action);
+}
+addEventListener('keydown',e=>{if(!running)return;const k=e.key.toLowerCase();if(twoPlayerMode&&player2InputMode==='keyboard'&&['j','l','i','k','u'].includes(k)){e.preventDefault();p2Action(({j:'left',l:'right',i:'jump',k:'slide',u:'skate'})[k]);return;}if(player1InputMode!=='keyboard')return;if(k==='e'){e.preventDefault();useGojoAbility();return}if(!['arrowleft','arrowright','arrowup','arrowdown','a','d','w','s',' '].includes(k))return;e.preventDefault();const now=performance.now();if(now-lastCommandAt<gameSettings.commandDelay)return;lastCommandAt=now;if(k==='arrowleft'||k==='a')changeLane(-1);else if(k==='arrowright'||k==='d')changeLane(1);else if(k==='arrowup'||k==='w'||k===' ')jump();else if(k==='arrowdown'||k==='s')roll()});
+canvas.addEventListener('pointerdown',pointerDown);canvas.addEventListener('pointerup',pointerUp);canvas.addEventListener('pointercancel',()=>gesture=null);canvas.addEventListener('contextmenu',e=>e.preventDefault());
+function reset(){
+ for(const o of objects){scene.remove(o.group);if(o.hitboxHelper)scene.remove(o.hitboxHelper)}objects=[];
+ for(const p of gojoProjectiles)scene.remove(p.group);gojoProjectiles=[];gojoCooldown=0;updateGojoButton();
+ score=0;coins=0;p2Coins=0;p2Score=0;p1NoCoinTime=0;p2NoCoinTime=0;p2BoardTime=0;gameTimer=0;gameTimerActive=!!gameSettings.timerEnabled;updateTimerWidget();reviveCount=0;reviveCost=1;elapsed=0;worldSpeed=15;spawnTimer=.8;state.lane=1;state.x=0;state.y=0;state.vy=0;state.sliding=0;state.invuln=0;state.onTrain=0;state.ridingTrain=null;state.platformHeight=2.72;state.airJump=false;state.fastLanding=false;state.fastLandingTimer=0;boardTime=0;hitFlash=0;gameOverFlag=false;
+ boardMesh.visible=false;boardEl.textContent='—';keysEl.textContent=keys;magnetTime=0;sneakersTime=0;scoreBoostTime=0;trickEl.style.opacity='0';playerRoot.position.set(0,0,0);reviveBtn.classList.add('hidden');
+ M.ground.color.setHex(0x263544);M.ground.emissive=new THREE.Color(0x000000);M.ground.emissiveIntensity=0;
+ scene.background.setHex(0x07152f);scene.fog.color.setHex(0x07152f);
+ running=true;state2.lane=1;state2.x=.55;p2BoardTime=0;if(p2SkateMesh)p2SkateMesh.visible=false;state2.y=0;state2.vy=0;state2.sliding=0;if(player2Root){player2Root.visible=twoPlayerMode;player2Root.position.set(state2.x,0,1.25)}if(p2Controls){p2Controls.className=player2Side;p2Controls.style.display='none'}twoPlayerBtn.textContent=twoPlayerMode?'👥 MODO 2 JOGADORES ✓':'👥 MODO 2 JOGADORES';pillarPhaseActive=false;previousPillarPhase=false;if(phaseBadge){phaseBadge.textContent='🗽 NOVA YORK · WORLD TOUR';phaseBadge.classList.remove('hidden')}overlay.classList.add('hidden');hud.classList.remove('hidden');hint.classList.remove('hidden');clock.start();
+}
+function finish(){
+ if(gameOverFlag)return;
+ gameOverFlag=true;running=false;gameTimerActive=false;hud.classList.add('hidden');hint.classList.add('hidden');if(phaseBadge)phaseBadge.classList.add('hidden');showGuard();showTrick('💥 VOCÊ ESBARROU! O GUARDA APARECEU!');
+ bestScore=Math.max(bestScore,Math.floor(score));
+ submitWeeklyRun();autosaveNow();
+ title.innerHTML='FIM DE JOGO';
+ reviveCost=Math.pow(2,reviveCount);
+ message.textContent=twoPlayerMode?`P1: ${Math.floor(score)} pontos / ${coins} moedas · P2: ${Math.floor(p2Score)} pontos / ${p2Coins} moedas · Saldo compartilhado: ${bankCoins} 🪙`:`Pontuação: ${Math.floor(score)} · Moedas nesta corrida: ${coins} · Saldo: ${bankCoins} 🪙 · Chaves: ${keys} 🔑.`;
+ startBtn.textContent='JOGAR DE NOVO';
+ if(keys>=reviveCost){
+  reviveBtn.textContent=`RENASCER · ${reviveCost} 🗝️`;
+  reviveBtn.classList.remove('hidden');
+ } else reviveBtn.classList.add('hidden');
+ overlay.classList.remove('hidden');
+}
+function revive(){
+ if(!gameOverFlag||keys<reviveCost)return;
+ keys-=reviveCost;localStorage.setItem('trilhosKeys',String(keys));keysEl.textContent=keys;
+ reviveCount++;gameOverFlag=false;running=true;gameTimerActive=!!gameSettings.timerEnabled;
+ // Remove hazards immediately around the player so the revive isn't an instant second crash.
+ for(const o of objects){
+  if(o.group.position.z>-7&&o.group.position.z<5&&o.lane===state.lane&&['train','barrier','overhead'].includes(o.type)){
+   o.passed=true;o.group.visible=false;o.group.position.z=14;
+  }
+ }
+ state.y=0;state.vy=0;state.sliding=0;state.onTrain=0;state.ridingTrain=null;state.fastLanding=false;state.fastLandingTimer=0;state.invuln=2.6;
+ hud.classList.remove('hidden');hint.classList.remove('hidden');overlay.classList.add('hidden');
+ showTrick('RENASCIDO! 🗝️');
+}
+function update(dt){
+ if(!running)return;const previousY=state.y;elapsed+=dt;missionData.survival=(missionData.survival||0)+dt;
+ const phaseCycle=elapsed%60;pillarPhaseActive=phaseCycle>=32&&phaseCycle<46;
+ if(phaseBadge){phaseBadge.textContent=pillarPhaseActive?'🏛️ TRECHO ESPECIAL DOS PILARES':'🗽 NOVA YORK · WORLD TOUR';phaseBadge.classList.remove('hidden')}
+ if(pillarPhaseActive&&!previousPillarPhase)showTrick('🏛️ TRECHO DOS PILARES!');
+ if(!pillarPhaseActive&&previousPillarPhase){for(const o of objects){if(o.type==='pillar'&&!o.passed){o.passed=true;o.group.visible=false;o.group.position.z=14}}}
+ previousPillarPhase=pillarPhaseActive;if(gameSettings.timerEnabled&&gameTimerActive){gameTimer+=dt;updateTimerWidget()}worldSpeed=Math.min(30,15+elapsed*.23+(boardTime>0&&equippedSkate==='speed'?4:0));p1NoCoinTime+=dt;if(twoPlayerMode){p2NoCoinTime+=dt;p2Score+=dt*worldSpeed*1.4*(scoreBoostTime>0?2:1)}p2BoardTime=Math.max(0,p2BoardTime-dt);if(p2SkateMesh)p2SkateMesh.visible=p2BoardTime>0;magnetTime=Math.max(0,magnetTime-dt);sneakersTime=Math.max(0,sneakersTime-dt);scoreBoostTime=Math.max(0,scoreBoostTime-dt);score+=dt*worldSpeed*1.4*(scoreBoostTime>0?2:1);missionData.score=Math.max(missionData.score,Math.floor(score));spawnTimer-=dt;
+ if(spawnTimer<=0){spawnPattern();spawnTimer=rand(1.35,1.75)*(15/worldSpeed)}
+ state.x+=(laneX[state.lane]-state.x)*Math.min(1,dt*(boardTime>0&&equippedSkate==='drift'?7:13));
+ if(state.y>0||state.vy!==0){state.y+=state.vy*dt;state.vy-=(boardTime>0&&equippedSkate==='glide'?9.5:22)*dt;if(state.y<=0){state.y=0;state.vy=0;state.platformHeight=2.72;state.onTrain=0;state.ridingTrain=null}}
+ 
+ state.fastLandingTimer=Math.max(0,state.fastLandingTimer-dt);if(state.fastLandingTimer<=0)state.fastLanding=false;state.sliding=Math.max(0,state.sliding-dt);state.invuln=Math.max(0,state.invuln-dt);boardTime=Math.max(0,boardTime-dt);boardMesh.visible=boardTime>0;boardEl.textContent=boardTime>0?boardTime.toFixed(1)+'s':'—';
+ if(twoPlayerMode){state2.x+=(laneX[state2.lane]-state2.x)*Math.min(1,dt*13);if(state2.y>0||state2.vy!==0){state2.y+=state2.vy*dt;state2.vy-=22*dt;if(state2.y<=0){state2.y=0;state2.vy=0}}state2.sliding=Math.max(0,state2.sliding-dt);if(player2Root){player2Root.visible=true;player2Root.position.set(state2.x,state2.y,1.25);player2Root.scale.setScalar(.88);const p2body=player2Root.children.find(c=>c.type==='Group');if(p2body)p2body.scale.y=state2.sliding>0?.58:1;if(p2SkateMesh){p2SkateMesh.position.y=state2.y+.04;p2SkateMesh.visible=p2BoardTime>0}}}playerRoot.position.set(state.x,state.y,0);if(playerHitboxHelper){playerHitboxHelper.position.set(state.x,state.y+.96,0);playerHitboxHelper.visible=!!gameSettings.showHitboxes;}
+ const isGojo=selectedSkin===6, isAuraSkin=selectedSkin===7;body.children[0].material=isGojo?gojoCloth:M.shirt;body.children[2].material=isGojo?gojoHairMat:M.dark;gojoBlindfold.visible=isGojo;if(backCap)backCap.visible=isAuraSkin;auraHands.forEach(a=>{a.visible=isAuraSkin; a.rotation.y=elapsed*2.8; a.scale.setScalar(.88+Math.sin(elapsed*8)*.16)});arms.forEach(a=>{if(a.children[0])a.children[0].material=isGojo?gojoCloth:M.shirt});
+ if(!isGojo)body.children[0].material.color.setHex(skinColors[selectedSkin]||skinColors[0]);
+ gojoCooldown=Math.max(0,gojoCooldown-dt);updateGojoButton();
+ const runningAnim=elapsed*worldSpeed*.8;
+ body.scale.y=state.sliding>0?.58:1;body.position.y=state.sliding>0?.2:Math.sin(runningAnim)*.035;
+ legs.forEach((l,i)=>{l.rotation.x=state.y>.1?-.25:Math.sin(runningAnim+(i*Math.PI))*0.72});
+ arms.forEach((a,i)=>{a.rotation.x=state.y>.1?-.8:Math.sin(runningAnim+(i*Math.PI))*-.6});
+ boardMesh.position.y=state.y+.04;
+ for(const d of decor){d.mesh.position.z+=worldSpeed*dt;if(d.mesh.position.z>12){d.mesh.position.z-=d.span;if(d.kind==='building')d.mesh.position.y=0}if(d.kind==='lamp')d.mesh.rotation.z=Math.sin(elapsed*1.2+d.mesh.position.z*.03)*.008}
+ for(const projectile of [...gojoProjectiles]){
+  projectile.group.position.z-=48*dt;projectile.group.rotation.z+=dt*5;
+  if(projectile.clearAll&&projectile.group.position.z < -8){
+   let destroyed=0;
+   for(const o of objects){
+    // O Vazio Roxo destrói obstáculos e power-ups, mas moedas e chaves permanecem intactas.
+    if(o.type!=='coin'&&o.type!=='key'&&!o.passed&&o.group.visible&&o.group.position.z<2&&o.group.position.z>-125){
+     o.passed=true;o.group.visible=false;o.group.position.z=14;if(o.hitboxHelper)o.hitboxHelper.visible=false;destroyed++;
+    }
+   }
+   projectile.clearAll=false;score+=destroyed*50;showTrick('🟣 VAZIO ROXO! '+destroyed+' OBJETOS DESTRUÍDOS!');
+  }
+  if(projectile.group.position.z < -125){scene.remove(projectile.group);gojoProjectiles=gojoProjectiles.filter(p=>p!==projectile)}
+ }
+ for(const o of objects){
+  // Trens estáticos: apenas o cenário avança em direção ao jogador.
+  o.group.position.z+=worldSpeed*dt;if(o.hitboxHelper){o.hitboxHelper.position.set(o.group.position.x,o.hitboxHelper.position.y,o.group.position.z);o.hitboxHelper.visible=!!gameSettings.showHitboxes&&!o.passed;}
+  if(o.type==='coin'){
+   o.group.rotation.y=Math.sin(elapsed*2+o.phase)*.08;
+   // Each coin is individual and the gaps let the player weave around them.
+   if(!o.passed&&o.group.position.z>-.9&&o.group.position.z<1.35&&(o.lane===state.lane||(magnetTime>0&&Math.abs(state.x-laneX[o.lane])<4.0))){
+    const localX=state.x-laneX[o.lane];
+    // Moeda no chão só é coletada com os pés no chão; pular por cima não conta.
+    // Moedas elevadas continuam exigindo a altura/plataforma correspondente.
+    const heightOK=o.height>3 ? false : o.height>2 ? (state.y>1.15 && state.y<2.6) : state.y<0.38;
+    if(heightOK&&(magnetTime>0||Math.abs(localX-o.sideOffset)<(.58+(upgrades.magnet||0)*.18))){
+     const earned=1;coins+=1;missionData.coins+=1;saveMissions();bankCoins+=1;if(gameSettings.timerStopMode==='coinOrDeath')gameTimerActive=false;localStorage.setItem('trilhosBankCoins',String(bankCoins));o.passed=true;o.group.visible=false;p1NoCoinTime=0
+    }
+   }
+   if(twoPlayerMode&&!o.passed&&o.group.visible&&o.group.position.z>-.9+1.25&&o.group.position.z<1.35+1.25&&(o.lane===state2.lane||(p2BoardTime>0&&Math.abs(state2.x-laneX[o.lane])<4.0))){
+    const p2LocalX=state2.x-laneX[o.lane];const p2HeightOK=o.height>3?false:o.height>2?(state2.y>1.15&&state2.y<2.6):state2.y<.38;
+    if(p2HeightOK&&Math.abs(p2LocalX-o.sideOffset)<.72){p2Coins++;p2Score+=10;bankCoins+=1;p2NoCoinTime=0;missionData.coins+=1;saveMissions();localStorage.setItem('trilhosBankCoins',String(bankCoins));o.passed=true;o.group.visible=false;showTrick('P2: MOEDA +1 🪙')}
+   }
+   } else if(o.type==='powerup'){
+   o.group.rotation.y+=dt*1.8;
+   if(!o.passed&&o.group.position.z>-.9&&o.group.position.z<1.35&&o.lane===state.lane&&state.y<2.4){
+    if(o.power==='magnet'){magnetTime=8;showTrick('ÍMÃ DE MOEDAS!')}
+    else if(o.power==='sneakers'){sneakersTime=9;showTrick('SUPER TÊNIS!')}
+    else {scoreBoostTime=10;showTrick('PONTOS X2!')}
+    o.passed=true;o.group.visible=false;score+=40;
+   }
+  } else if(o.type==='key'){
+   o.group.rotation.y+=dt*2.4;
+   if(!o.passed&&o.group.position.z>-.9&&o.group.position.z<1.35&&o.lane===state.lane&&state.y>.45&&state.y<2.3){
+    keys++;missionData.keys=(missionData.keys||0)+1;saveMissions();localStorage.setItem('trilhosKeys',String(keys));o.passed=true;o.group.visible=false;score+=250;showTrick('CHAVE +1! 🔑')
+   }
+   } else {
+   // Não existe mecânica de subir ou aterrissar em trens nesta versão.
+  }
+  // Só obstáculos físicos entram no teste de morte; trens são barreiras a evitar, nunca plataformas.
+  const isHazard=['train','barrier','jumpblock','slideblock','overhead','wall','pillar'].includes(o.type);
+  const trainLike=o.type==='train';
+  const halfDepth=trainLike?3.45:(o.halfDepth||.24);
+  const zHit=trainLike
+    ? (o.group.position.z+halfDepth>-.8 && o.group.position.z-halfDepth<.85)
+    : (o.group.position.z+halfDepth>-.8 && o.group.position.z+halfDepth<.85);
+  const p2zHit=twoPlayerMode&&(o.group.position.z+halfDepth>-.8+1.25&&o.group.position.z-halfDepth<.85+1.25);const p2Hit=twoPlayerMode&&p2zHit&&Math.abs(state2.x-laneX[o.lane])<.88;
+  if(isHazard&&!o.passed&&((zHit&&Math.abs(state.x-laneX[o.lane])<.88)||p2Hit)){
+   const p2Only=p2Hit&&!(zHit&&Math.abs(state.x-laneX[o.lane])<.88);const activeState=p2Only?state2:state;
+   let safe=(o.type==='barrier'&&(activeState.y>.85||activeState.sliding>0))||
+    (o.type==='wall'&&activeState.y>1.0)||
+    (o.type==='jumpblock'&&activeState.y>1.05)||
+    (o.type==='slideblock'&&(activeState.sliding>0||activeState.y>1.48))||
+    (o.type==='overhead'&&(activeState.sliding>0||activeState.y>1.48))||
+    (o.type==='pillar'&&false);
+   if(!safe){
+    if(p2Only&&p2BoardTime>0){p2BoardTime=0;if(p2SkateMesh)p2SkateMesh.visible=false;o.passed=true;o.group.visible=false;missionData.skateSaves=(missionData.skateSaves||0)+1;saveMissions();showTrick('🛹 P2: O SKATE TE SALVOU!')}
+    else if(!p2Only&&boardTime>0){boardTime=0;boardMesh.visible=false;state.invuln=1.25;o.passed=true;o.group.visible=false;missionData.skateSaves=(missionData.skateSaves||0)+1;saveMissions();showTrick('🛹 O SKATE TE SALVOU!')}
+    else if(!p2Only&&state.invuln>0){o.passed=true;o.group.visible=false}
+    else{finish();break}
+   }else{
+    o.passed=true;score+=35;missionData.dodges=(missionData.dodges||0)+1;saveMissions();
+    if(o.type==='wall'&&state.y>1.0){state.vy=7.2;state.airJump=true;showTrick('SALTO NO MURO!')}
+    else showTrick('DESVIO!')
+   }
+  }
+ }
+ objects=objects.filter(o=>{if(o.group.position.z>13){scene.remove(o.group);if(o.hitboxHelper)scene.remove(o.hitboxHelper);return false}return true});
+ scoreEl.textContent=Math.floor(score);coinsEl.textContent=coins;keysEl.textContent=keys;
+}
+const defaultGamepadMapping={left:14,right:15,jump:12,slide:13,skate:0,gojo:3};
+let gamepadMapping={...defaultGamepadMapping};
+try{const saved=JSON.parse(localStorage.getItem('trilhosGamepadMapping')||'null');if(saved)for(const k of Object.keys(defaultGamepadMapping))if(Number.isInteger(Number(saved[k]))&&Number(saved[k])>=0&&Number(saved[k])<=16)gamepadMapping[k]=Number(saved[k])}catch(e){}
+window.setGamepadMapping=(action,value)=>{if(!(action in defaultGamepadMapping))return;gamepadMapping[action]=Number(value);localStorage.setItem('trilhosGamepadMapping',JSON.stringify(gamepadMapping));showTrick('🎮 CONTROLE MAPEADO!')};
+window.resetGamepadMapping=()=>{gamepadMapping={...defaultGamepadMapping};localStorage.setItem('trilhosGamepadMapping',JSON.stringify(gamepadMapping));showMenuPage('settings');showTrick('🎮 PADRÃO RESTAURADO!')};
+let gpPrevButtons=[[],[]],gpLaneDir=[0,0],gpMenuIndex=0,gpLastMove=0,gpLastAction=0,gpLastConnected=[false,false];
+function pollGamepad(){
+ const pads=navigator.getGamepads?navigator.getGamepads():[];const connected=[...pads].filter(p=>p&&p.connected);
+ const now=performance.now();
+ if(running){
+  const players=[{mode:player1InputMode,state:state,index:0},{mode:player2InputMode,state:state2,index:1}];
+  players.forEach(({mode,state:ps,index})=>{
+   if((index===1&&!twoPlayerMode)||mode!=='gamepad')return;
+   const activeGamepadPlayers=players.filter((pl)=>pl.mode==='gamepad'&&(pl.index===0||twoPlayerMode));
+   const padIndex=activeGamepadPlayers.findIndex(pl=>pl.index===index);
+   const gp=connected[padIndex];if(!gp){gpPrevButtons[index]=[];gpLaneDir[index]=0;gpLastConnected[index]=false;return}
+   if(!gpLastConnected[index]){showTrick(`🎮 GAMEPAD JOGADOR ${index+1} CONECTADO!`);gpLastConnected[index]=true}
+   const pressed=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed),edge=i=>pressed(i)&&!gpPrevButtons[index][i];
+   let dir=0;if(edge(gamepadMapping.left)||((gp.axes[0]||0)<-.55))dir=-1;else if(edge(gamepadMapping.right)||((gp.axes[0]||0)>.55))dir=1;
+   if(dir&&dir!==gpLaneDir[index]&&now-gpLastMove>130){if(index===0)changeLane(dir);else p2Action(dir<0?'left':'right');gpLastMove=now}
+   gpLaneDir[index]=(pressed(gamepadMapping.left)||((gp.axes[0]||0)<-.55))?-1:(pressed(gamepadMapping.right)||((gp.axes[0]||0)>.55))?1:0;
+   if(edge(gamepadMapping.jump)){if(index===0)jump();else p2Action('jump')}
+   if(edge(gamepadMapping.slide)){if(index===0)roll();else p2Action('slide')}
+   if(edge(gamepadMapping.skate)){if(index===0)activateBoard();else p2Action('skate');}
+   if(index===0&&edge(gamepadMapping.gojo))useGojoAbility();
+   gpPrevButtons[index]=gp.buttons.map(b=>b.pressed);
+  });
+  return;
+ }
+ const gp=connected[0];if(!gp){gpPrevButtons[0]=[];gpLastConnected[0]=false;return}
+ const pressed=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed),edge=i=>pressed(i)&&!gpPrevButtons[0][i];
+ if(!overlay.classList.contains('hidden')){
+  const buttons=[...overlay.querySelectorAll('button')].filter(b=>!b.disabled&&b.offsetParent!==null&&!b.classList.contains('hidden'));
+  if(buttons.length){gpMenuIndex=Math.max(0,Math.min(gpMenuIndex,buttons.length-1));if(now-gpLastMove>170){if(edge(12)||edge(14)){gpMenuIndex=(gpMenuIndex-1+buttons.length)%buttons.length;gpLastMove=now}else if(edge(13)||edge(15)){gpMenuIndex=(gpMenuIndex+1)%buttons.length;gpLastMove=now}}buttons.forEach((b,i)=>{b.style.outline=i===gpMenuIndex?'3px solid #fef08a':'';b.style.outlineOffset=i===gpMenuIndex?'2px':''});if((edge(gamepadMapping.skate)||edge(9))&&now-gpLastAction>250){buttons[gpMenuIndex].click();gpLastAction=now;gpMenuIndex=0}if(edge(1)){const back=buttons.find(b=>/VOLTAR|SAIR|FECHAR/i.test(b.textContent));if(back)back.click()}}
+ }
+ gpPrevButtons[0]=gp.buttons.map(b=>b.pressed);
+}
+function render(){
+ requestAnimationFrame(render);pollGamepad();const dt=Math.min(clock?clock.getDelta():.016,.04);
+ if(running)update(dt);
+ if(camera&&renderer){
+  const split=!!(running&&twoPlayerMode&&player2Root);
+  const divider=document.getElementById('splitDivider');if(divider)divider.style.display=split?'block':'none';
+  if(split){
+   const half=Math.floor(innerWidth/2),h=innerHeight;
+   camera.aspect=Math.max(1,half)/h;camera.updateProjectionMatrix();
+   camera2.aspect=Math.max(1,innerWidth-half)/h;camera2.updateProjectionMatrix();
+   camera.position.x+=(state.x*.17-camera.position.x)*.045;camera.position.y+=(5.2+state.y*.08-camera.position.y)*.04;camera.lookAt(state.x*.22,1.0,-10);
+   camera2.position.x+=(state2.x*.17-camera2.position.x)*.045;camera2.position.y+=(5.2+state2.y*.08-camera2.position.y)*.04;camera2.lookAt(state2.x*.22,1.0,-10);
+   renderer.setScissorTest(true);renderer.setScissor(0,0,half,h);renderer.setViewport(0,0,half,h);renderer.clear();renderer.render(scene,camera);
+   renderer.setScissor(half,0,innerWidth-half,h);renderer.setViewport(half,0,innerWidth-half,h);renderer.clearDepth();renderer.render(scene,camera2);renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,h);
+  }else{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();camera.position.x+=(state.x*.17-camera.position.x)*.045;camera.position.y+=(5.2+state.y*.08-camera.position.y)*.04;camera.lookAt(state.x*.22,1.0,-10);renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera)}
+ }
+}
+
+function menuHome(){
+ if(phaseBadge)phaseBadge.classList.add('hidden');
+ // Expose this handler because mobile inline onclick buttons run in global scope.
+ title.innerHTML='TRILHOS<br>INSANOS 3D';
+ message.textContent=`Fase: Nova York · World Tour. Saldo: ${bankCoins} moedas · ${keys} chaves. Recorde: ${bestScore}.`;
+ pagePanel.classList.add('hidden');menuButtons.classList.remove('hidden');
+ M.ground.color.setHex(0x263544);M.ground.emissive=new THREE.Color(0x000000);M.ground.emissiveIntensity=0;scene.background.setHex(0x07152f);scene.fog.color.setHex(0x07152f);
+ startBtn.classList.remove('hidden');startBtn.textContent='JOGAR';
+}
+window.menuHome=menuHome;
+window.showWeeklyLeaderboard=async function(){
+ menuButtons.classList.add('hidden');startBtn.classList.add('hidden');pagePanel.classList.remove('hidden');pagePanel.innerHTML='<h3>🏆 TOP SEMANAL</h3><p>Carregando classificações do servidor…</p><button onclick="menuHome()">VOLTAR</button>';
+ try{const r=await fetch('/api/leaderboards',{cache:'no-store'});if(!r.ok)throw new Error('Servidor não disponível');const data=await r.json();let html='<h3>🏆 TOP DA SEMANA</h3><p>Atualiza a cada semana.</p><h4>🏁 Mais pontos</h4>';html+=data.score.length?data.score.slice(0,10).map((x,i)=>`<div class="item">${i+1}. <b>${escapeLeaderboard(x.name)}</b> — ${Math.floor(x.value)} pontos</div>`).join(''):'<p>Nenhum resultado esta semana.</p>';html+='<h4>⏱️ Maior tempo sem pegar moedas</h4>';html+=data.noCoin.length?data.noCoin.slice(0,10).map((x,i)=>`<div class="item">${i+1}. <b>${escapeLeaderboard(x.name)}</b> — ${Math.floor(x.value)} s</div>`).join(''):'<p>Nenhum resultado esta semana.</p>';html+='<p style="font-size:11px">Ranking online disponível quando o jogo estiver publicado com o servidor.</p><button onclick="menuHome()">VOLTAR</button>';pagePanel.innerHTML=html;
+ }catch(e){pagePanel.innerHTML='<h3>🏆 TOP SEMANAL</h3><p>Servidor ainda não conectado. Inicie o servidor Trilhos Insanos ou publique o projeto com a API habilitada.</p><button onclick="menuHome()">VOLTAR</button>'}
+};
+function escapeLeaderboard(v){return String(v||'Jogador').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function submitWeeklyRun(){if(leaderboardSubmitting)return;leaderboardSubmitting=true;try{const submit=async(name,playerScore,noCoin)=>fetch('/api/runs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,score:Math.floor(playerScore),noCoinSeconds:Math.floor(noCoin),player: name===leaderboardName?'P1':'P2'})});await submit(leaderboardName,score,p1NoCoinTime);if(twoPlayerMode)await submit((leaderboardName+' P2').slice(0,18),p2Score,p2NoCoinTime)}catch(e){console.info('Ranking online indisponível; a corrida continua normalmente.')}finally{leaderboardSubmitting=false}}
+function showMenuPage(which){
+ menuButtons.classList.add('hidden');startBtn.classList.add('hidden');pagePanel.classList.remove('hidden');
+ let html=`<b>🪙 ${bankCoins} moedas &nbsp; 🔑 ${keys} chaves</b><br>`;
+ if(which==='settings'){
+  html+='<h3>⚙️ CONFIGURAÇÕES</h3>';
+  html+=`<div class="item"><b>📱 Orientação da tela</b><p style="font-size:12px">Use a tela deitada para jogar melhor. O navegador pode pedir tela cheia.</p><button type="button" onclick="window.setLandscape(true)">↔️ ATIVAR TELA DEITADA</button> <button type="button" onclick="window.setLandscape(false)">↕️ VOLTAR AO NORMAL</button></div>`;
+  const inputOptions=(value)=>`<option value="mobile" ${value==='mobile'?'selected':''}>📱 Celular (arrastar)</option><option value="gamepad" ${value==='gamepad'?'selected':''}>🎮 Gamepad</option><option value="keyboard" ${value==='keyboard'?'selected':''}>⌨️ Teclado</option>`;
+  const skinLabels=['Clássica','Vermelha','Verde','Roxa','Laranja','Prateada','Gojo Satoru','Aura Azul'];
+  html+=`<div class="item"><b>🎮 Entrada de cada jogador</b><label>Jogador 1 — modo de controle<select style="width:100%;padding:9px;border-radius:9px;background:#10233c;color:white" onchange="window.setPlayerInput(1,this.value)">${inputOptions(player1InputMode)}</select></label><label><input type="checkbox" ${twoPlayerMode?'checked':''} onchange="window.setTwoPlayerMode(this.checked)"> 👥 Ativar modo para 2 jogadores</label><label>Jogador 2 — modo de controle<select style="width:100%;padding:9px;border-radius:9px;background:#10233c;color:white" onchange="window.setPlayerInput(2,this.value)">${inputOptions(player2InputMode)}</select></label><label>Nome para o ranking semanal<input type="text" maxlength="18" value="${leaderboardName.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onchange="window.setPlayerName(this.value)"></label><label>Skin do jogador 2<select style="width:100%;padding:9px;border-radius:9px;background:#10233c;color:white" onchange="window.setP2Skin(this.value)">${skinLabels.map((n,i)=>'<option value="'+i+'" '+(p2SelectedSkin===i?'selected':'')+'>'+n+'</option>').join('')}</select></label><p style="font-size:12px">O jogador 2 pode usar os skates que o jogador 1 já possui e equipou. Ative com U no teclado ou o botão de skate do gamepad.</p><label>Se o jogador 2 usar celular, seus gestos ficam no lado:<select style="width:100%;padding:9px;border-radius:9px;background:#10233c;color:white" onchange="window.setP2Side(this.value)"><option value="left" ${player2Side==='left'?'selected':''}>⬅️ Esquerdo</option><option value="right" ${player2Side==='right'?'selected':''}>➡️ Direito</option></select></label><p style="font-size:12px">Celular: arraste para esquerda/direita para trocar de pista e para cima/baixo para pular/deslizar, como no Subway Surfers. Se os dois jogadores usarem celular, cada um arrasta no seu lado. Teclado: P1 usa setas e E para Gojo; P2 usa J/L para as pistas e I/K para pular/deslizar e U para skate. Gamepad: cada jogador usa seu próprio controle conectado.</p></div>`;
+  html+='<div class="item"><h4 style="margin:2px 0 8px">🎮 MAPEAR GAMEPAD</h4><p style="font-size:12px;margin:4px 0 10px">Escolha qual botão do controle executa cada ação. Padrão PlayStation: setas ↑/↓ pulam/deslizam e ✕ ativa o skate.</p>';
+  const gpButtonNames={0:'✕ / A (baixo)',1:'○ / B (direita)',2:'□ / X (esquerda)',3:'△ / Y (cima)',4:'L1',5:'R1',6:'L2',7:'R2',8:'SELECT / SHARE',9:'START / OPTIONS',10:'L3',11:'R3',12:'Seta ↑',13:'Seta ↓',14:'Seta ←',15:'Seta →',16:'PS / HOME'};
+  const gpLabels={left:'Trocar para esquerda',right:'Trocar para direita',jump:'Pular',slide:'Agachar / deslizar',skate:'Ativar skate',gojo:'Habilidade do Gojo'};
+  for(const [action,label] of Object.entries(gpLabels)){html+=`<label style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0">${label}<select style="max-width:155px;padding:7px;border-radius:8px" onchange="window.setGamepadMapping('${action}',this.value)">${Object.entries(gpButtonNames).map(([idx,name])=>`<option value="${idx}" ${Number(gamepadMapping[action])===Number(idx)?'selected':''}>${name}</option>`).join('')}</select></label>`}
+  html+='<button type="button" onclick="window.resetGamepadMapping()">RESTAURAR PADRÃO</button></div>';
+  html+=`<label><input type="checkbox" ${gameSettings.shadows?'checked':''} onchange="changeSetting('shadows',this.checked?'true':'false')"> Sombras (melhora o visual, pode pesar no celular)</label>`;
+  html+=`<label><input type="checkbox" ${gameSettings.showHitboxes?'checked':''} onchange="changeSetting('showHitboxes',this.checked?'true':'false')"> 🟥 Mostrar hitboxes (debug visual)</label><p style="font-size:12px">Hitbox azul = jogador; vermelha = obstáculo.</p>`;
+  html+=`<label>Demora dos comandos: <b>${gameSettings.commandDelay} ms</b><input type="range" min="0" max="500" step="10" value="${gameSettings.commandDelay}" oninput="this.previousElementSibling.innerHTML='Demora dos comandos: <b>'+this.value+' ms</b>';changeSetting('commandDelay',this.value)"></label>`;
+  html+=`<label><input type="checkbox" ${gameSettings.timerEnabled?'checked':''} onchange="changeSetting('timerEnabled',this.checked?'true':'false')"> Habilitar cronômetro</label>`;
+  html+=`<label>Tamanho do cronômetro: <b>${Math.round(gameSettings.timerSize*100)}%</b><input type="range" min="0.6" max="2.2" step="0.1" value="${gameSettings.timerSize}" oninput="this.previousElementSibling.innerHTML='Tamanho do cronômetro: <b>'+Math.round(this.value*100)+'%</b>';changeSetting('timerSize',this.value)"></label>`;
+  html+=`<div class="item"><b>🖼️ Imagem do cronômetro</b><p style="margin:6px 0 10px">Escolha uma foto da galeria do celular. A imagem será reduzida automaticamente para funcionar melhor.</p><button type="button" style="width:100%;min-height:50px;background:#38bdf8;color:#082032" onclick="window.chooseTimerImage()">📱 ESCOLHER DA GALERIA</button><button type="button" style="width:100%;min-height:44px;background:#475569;color:#fff" onclick="window.resetTimerImage()">REMOVER IMAGEM</button></div>`;
+  html+=`<p>Quando parar:</p><label><input type="radio" name="timerStop" ${gameSettings.timerStopMode==='coinOrDeath'?'checked':''} onchange="changeSetting('timerStopMode','coinOrDeath')"> Parar o cronômetro quando pegar moedas ou morrer</label><label><input type="radio" name="timerStop" ${gameSettings.timerStopMode==='death'?'checked':''} onchange="changeSetting('timerStopMode','death')"> Parar o cronômetro quando morrer</label><p>Se renascer usando uma chave, o cronômetro continua a partir do tempo anterior.</p>`;
+  html+='<button type="button" style="display:block;width:100%;min-height:54px;margin:16px 0 8px;background:#22c55e;color:#052e16;font-size:16px;touch-action:manipulation;position:relative;z-index:3" onclick="window.menuHome()">⬅ SAIR DAS CONFIGURAÇÕES</button>';
+ }else if(which==='shop'){
+  html+='<h3>🛹 LOJA DE SKATES</h3><p>Compre e equipe um skate. Durante a corrida, toque duas vezes para ativá-lo. Um skate ativo absorve uma colisão e salva você uma vez.</p>';
+  const skates=[['protector','🛡️ Skate Protetor','Protege de uma colisão',500],['speed','⚡ Skate Veloz','Aumenta a velocidade enquanto ativo',650],['drift','💨 Skate Derrapagem','Troca de pista mais suave enquanto ativo',650],['glide','🪂 Skate Planador','Queda mais lenta enquanto ativo',750],['jump','🚀 Skate Super Pulo','Pulos mais altos enquanto ativo',750]];
+  for(const [id,name,power,cost] of skates){const owned=ownedSkates.includes(id);html+=`<div class="item"><b>${name}</b><p>${power}</p><button onclick="${owned?`equipSkate('${id}')`:`buySkate('${id}',${cost})`}">${owned?(equippedSkate===id?'EQUIPADO ✓':'EQUIPAR'):`Comprar · ${cost} 🪙`}</button></div>`}
+  html+='<div class="item">🔑 Chave rara <button onclick="buyKey()">Comprar · 250 🪙</button></div><p>Moedas são ganhas jogando; não há compra de pacotes de moedas.</p>';
+ }else if(which==='missions'){
+  html+='<h3>🎯 MISSÕES · 300 NO TOTAL</h3><p>As missões aparecem em grupos de 3. Complete e resgate as 3 para liberar o próximo grupo. Nenhuma missão se repete.</p>';
+  const missions=window.allMissions300;
+  let batchStart=0;while(batchStart<missions.length&&missions.slice(batchStart,batchStart+3).every(m=>!!missionData.claimed[m.id]))batchStart+=3;
+  const visible=missions.slice(batchStart,Math.min(batchStart+3,missions.length));
+  html+=`<p><b>Grupo ${Math.min(100,Math.floor(batchStart/3)+1)}/100</b> · ${Object.keys(missionData.claimed||{}).filter(k=>/^m\d{3}$/.test(k)&&missionData.claimed[k]).length}/300 missões concluídas</p>`;
+  for(const m of visible){const progress=Math.min(m.target,Number(missionData[m.source]||0)),claimed=!!missionData.claimed[m.id],done=progress>=m.target;html+=`<div class="item"><b>${m.label}</b><p>${m.source==='survival'?Math.floor(progress)+'/'+m.target+' segundos':Math.floor(progress)+'/'+m.target} ${claimed?'· CONCLUÍDA':done?'· OBJETIVO COMPLETO':''}</p><button ${!done||claimed?'disabled style="opacity:.45"':''} onclick="claimMission('${m.id}',${m.reward})">${claimed?'CONCLUÍDA':`Resgatar · ${m.reward} 🪙`}</button></div>`}
+ }else if(which==='upgrades'){
+  html+='<h3>⚙️ MELHORIAS</h3>';
+  const names={magnet:'Ímã de moedas',board:'Duração do skate',multiplier:'Bônus de moedas'};
+  for(const k of Object.keys(names)){const lvl=upgrades[k]||0;const cost=150*(lvl+1);html+=`<div class="item">${names[k]} · nível ${lvl}/5 <button onclick="buyUpgrade('${k}',${cost})">${lvl>=5?'MÁXIMO':`Melhorar · ${cost} 🪙`}</button></div>`}
+ }else{
+  html+='<h3>🧢 SKINS</h3>';
+  const names=['Clássica','Vermelha','Verde','Roxa','Laranja','Prateada','Gojo Satoru 🟣','Aura Azul 🧢'];
+  for(let i=0;i<names.length;i++){const cost=i===0?0:i===6?5000:i===7?100:250*i;const owned=ownedSkins.includes(i);html+=`<div class="item"><span style="color:#${skinColors[i].toString(16).padStart(6,'0')}">●</span> ${names[i]} ${i===6?'<small>Vazio Roxo: destrói obstáculos e itens de poder, preservando moedas e chaves · recarga de 30 s</small>':i===7?'<small>Boné para trás e aura brilhante nas mãos · 100 moedas</small>':''} <button onclick="selectSkin(${i},${cost})">${selectedSkin===i?'EQUIPADA':owned?'EQUIPAR':`Desbloquear · ${cost} 🪙`}</button></div>`}
+ }
+ if(which!=='settings')html+='<button onclick="menuHome()">VOLTAR</button>'; 
+ pagePanel.innerHTML=html;
+}
+function skateName(id){return ({protector:'Skate Protetor',speed:'Skate Veloz',drift:'Skate Derrapagem Suave',glide:'Skate Planador',jump:'Skate Super Pulo'})[id]||'Skate'}
+window.buySkate=(id,cost)=>{if(ownedSkates.includes(id)){window.equipSkate(id);return}if(bankCoins<cost){showTrick('MOEDAS INSUFICIENTES');return}bankCoins-=cost;ownedSkates.push(id);boardOwned=ownedSkates.includes('protector');localStorage.setItem('trilhosBankCoins',String(bankCoins));localStorage.setItem('trilhosSkates',JSON.stringify(ownedSkates));localStorage.setItem('trilhosBoardOwned',String(boardOwned));saveProgress();showMenuPage('shop')};
+window.equipSkate=(id)=>{if(!ownedSkates.includes(id)){showTrick('SKATE AINDA NÃO COMPRADO');return}equippedSkate=id;localStorage.setItem('trilhosEquippedSkate',id);saveProgress();showTrick(skateName(id)+' EQUIPADO!');showMenuPage('shop')};
+window.claimMission=(id,reward)=>{const m=window.allMissions300.find(x=>x.id===id);if(!m||missionData.claimed[id]||Number(missionData[m.source]||0)<m.target)return;const idx=window.allMissions300.findIndex(x=>x.id===id);if(idx<0||idx>=Math.floor(Object.keys(missionData.claimed||{}).filter(k=>/^m\d{3}$/.test(k)&&missionData.claimed[k]).length/3)*3+3)return;missionData.claimed[id]=true;bankCoins+=reward;localStorage.setItem('trilhosBankCoins',String(bankCoins));saveMissions();saveProgress();showMenuPage('missions');};
+window.buyKey=()=>{if(bankCoins<250){showTrick('MOEDAS INSUFICIENTES');return}bankCoins-=250;keys++;localStorage.setItem('trilhosBankCoins',String(bankCoins));localStorage.setItem('trilhosKeys',String(keys));keysEl.textContent=keys;showMenuPage('shop')};
+window.buyUpgrade=(k,cost)=>{if((upgrades[k]||0)>=5)return;if(bankCoins<cost){showTrick('MOEDAS INSUFICIENTES');return}bankCoins-=cost;upgrades[k]=(upgrades[k]||0)+1;localStorage.setItem('trilhosBankCoins',String(bankCoins));localStorage.setItem('trilhosUpgrades',JSON.stringify(upgrades));showMenuPage('upgrades')};
+window.selectSkin=(i,cost)=>{if(!ownedSkins.includes(i)){if(bankCoins<cost){showTrick('MOEDAS INSUFICIENTES');return}bankCoins-=cost;ownedSkins.push(i);localStorage.setItem('trilhosBankCoins',String(bankCoins));localStorage.setItem('trilhosSkins',JSON.stringify(ownedSkins))}selectedSkin=i;localStorage.setItem('trilhosSelectedSkin',String(i));updateGojoButton();showMenuPage('skins')};
+function updateGojoButton(){if(!gojoAbilityBtn)return;const active=running&&selectedSkin===6;gojoAbilityBtn.classList.toggle('hidden',!active);if(active)gojoAbilityBtn.textContent=gojoCooldown>0?'🟣 VAZIO ROXO · '+Math.ceil(gojoCooldown)+' s':'🟣 VAZIO ROXO · PRONTO';}
+window.useGojoAbility=function(){
+ if(!running||selectedSkin!==6)return;if(gojoCooldown>0){showTrick('VAZIO ROXO RECARREGANDO!');return}
+ const group=new THREE.Group();const orb=new THREE.Mesh(new THREE.SphereGeometry(.58,20,16),hollowPurpleMat);group.add(orb);
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.82,.09,8,28),glow(0xd8b4fe,0x9333ea,3.2));ring.rotation.x=Math.PI/2;group.add(ring);
+ const ring2=new THREE.Mesh(new THREE.TorusGeometry(1.02,.045,8,28),glow(0x7c3aed,0x6d28d9,2.4));ring2.rotation.y=Math.PI/3;group.add(ring2);
+ group.position.set(state.x,1.45,-.65);scene.add(group);gojoProjectiles.push({group,target:null,clearAll:true});gojoCooldown=30;updateGojoButton();showTrick('🟣 VAZIO ROXO: DESTRÓI TUDO, MENOS MOEDAS E CHAVES!');
+};
+function start(){reset()}
+setInterval(()=>{if(running){autosaveNow();lastAutoSave=Date.now()}else saveProgress()},5000);
+addEventListener('pagehide',saveProgress);
+addEventListener('beforeunload',saveProgress);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveProgress()});
+
+twoPlayerBtn.addEventListener('click',()=>{twoPlayerMode=!twoPlayerMode;localStorage.setItem('trilhosTwoPlayer',twoPlayerMode?'1':'0');twoPlayerBtn.textContent=twoPlayerMode?'👥 MODO 2 JOGADORES ✓':'👥 MODO 2 JOGADORES';message.textContent=twoPlayerMode?'Co-op local ativado! Configure o modo de controle de cada jogador em Configurações.':'Modo solo selecionado.'});if(twoPlayerMode)twoPlayerBtn.textContent='👥 MODO 2 JOGADORES ✓';startBtn.addEventListener('click',start);reviveBtn.addEventListener('click',revive);updateGojoButton();
+shopBtn.addEventListener('click',()=>showMenuPage('shop'));
+upgradeBtn.addEventListener('click',()=>showMenuPage('upgrades'));
+skinsBtn.addEventListener('click',()=>showMenuPage('skins'));
+missionsBtn.addEventListener('click',()=>showMenuPage('missions'));if(leaderboardBtn)leaderboardBtn.addEventListener('click',()=>window.showWeeklyLeaderboard());
+settingsBtn.addEventListener('click',()=>showMenuPage('settings'));
+updateTimerWidget();
+function resize(){if(!camera||!renderer)return;camera.aspect=(running&&twoPlayerMode?Math.max(1,Math.floor(innerWidth/2)):innerWidth)/innerHeight;camera.updateProjectionMatrix();if(camera2){camera2.aspect=Math.max(1,Math.ceil(innerWidth/2))/innerHeight;camera2.updateProjectionMatrix()}renderer.setSize(innerWidth,innerHeight);if(p2Controls)p2Controls.className=player2Side}
+addEventListener('resize',resize);
+try{setup();menuHome();render()}catch(err){title.textContent='ERRO AO ABRIR';message.textContent='O navegador não conseguiu iniciar o 3D. Tente abrir no Chrome com internet.';console.error(err)}
+})();
+</script>
+</body>
+</html>
